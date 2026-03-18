@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Routes, Route, useNavigate, useParams, useSearchParams, useLocation, Navigate } from "react-router-dom";
 import { useQuizHistory } from "./useQuizHistory.js";
 import { getQuizById, saveProgress, clearProgress } from "./db.js";
+import { supabase } from "./lib/supabase.js";
 
 // ═══════════════════════════════════════════════════════════════
 // STYLES
@@ -13,7 +14,7 @@ const injectStyles = () => {
   s.textContent = `
     @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #FAF7F2; font-family: 'Figtree', system-ui, sans-serif; color: #2C2420; -webkit-font-smoothing: antialiased; }
+    body { background: #FAF7F2; font-family: 'Figtree', system-ui, sans-serif; color: #2C2420; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom, 0); }
     h1, h2, h3, h4 { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; }
     .fade-in { animation: fadeIn 0.4s ease-out both; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
@@ -103,6 +104,112 @@ const formatDate = (ts) => {
   return new Intl.DateTimeFormat("en", { month: "short", day: "numeric" }).format(d);
 };
 
+const computeStreak = (results) => {
+  if (!results.length) return 0;
+  const days = [...new Set(results.map((r) => {
+    const d = new Date(r.created_at);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  }))].sort().reverse();
+  const today = new Date();
+  let expected = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let streak = 0;
+  for (const dayStr of days) {
+    const [y, m, d] = dayStr.split("-").map(Number);
+    const date = new Date(y, m, d);
+    const diff = (expected - date) / 86400000;
+    if (diff <= 1) {
+      streak++;
+      expected = date;
+    } else break;
+  }
+  return streak;
+};
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIN SCREEN
+// ═══════════════════════════════════════════════════════════════
+function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const { error: err } = await supabase.auth.signInWithOtp({ email: email.trim() });
+      if (err) throw err;
+      setSent(true);
+    } catch (err) {
+      setError(err.message || "Failed to send magic link");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fade-in" style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", padding: "48px 24px",
+    }}>
+      <div style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>🪅</div>
+        <h1 style={{ fontSize: 36, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Piñata</h1>
+        <p style={{ color: C.muted, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>
+          Sign in to track your Spanish quiz scores
+        </p>
+
+        {sent ? (
+          <div style={{
+            background: C.successLight, border: `1px solid ${C.success}`, borderRadius: 14,
+            padding: "24px 20px", textAlign: "center",
+          }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>✉️</div>
+            <p style={{ fontWeight: 600, color: C.success, marginBottom: 4 }}>Check your email!</p>
+            <p style={{ color: C.muted, fontSize: 14 }}>
+              We sent a magic link to <strong style={{ color: C.text }}>{email}</strong>
+            </p>
+            <button onClick={() => setSent(false)} style={{
+              marginTop: 16, background: "none", border: "none", color: C.accent,
+              fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+            }}>
+              Use a different email
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <input
+              type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com" autoComplete="email" autoFocus
+              style={{
+                width: "100%", padding: "14px 18px", borderRadius: 12,
+                border: `1.5px solid ${C.border}`, background: C.inputBg,
+                fontSize: 16, color: C.text, outline: "none", marginBottom: 14,
+                fontFamily: "'Figtree', sans-serif", transition: "border-color 0.2s",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = C.accent)}
+              onBlur={(e) => (e.target.style.borderColor = C.border)}
+            />
+            <button type="submit" disabled={loading || !email.trim()} style={{
+              width: "100%", padding: "14px 24px", borderRadius: 12, border: "none",
+              background: (!loading && email.trim()) ? C.accent : C.border,
+              color: "white", fontWeight: 600, fontSize: 16, cursor: (!loading && email.trim()) ? "pointer" : "not-allowed",
+              fontFamily: "'Figtree', sans-serif", transition: "background 0.2s",
+              minHeight: 48,
+            }}>
+              {loading ? "Sending..." : "Send Magic Link"}
+            </button>
+            {error && <p style={{ color: C.error, fontSize: 13, marginTop: 12 }}>{error}</p>}
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // HISTORY SECTION
 // ═══════════════════════════════════════════════════════════════
@@ -189,8 +296,9 @@ function HistorySection({ attempts, onDelete, onSelect }) {
               <button data-del onClick={(e) => { e.stopPropagation(); onDelete(a.id); }}
                 style={{
                   position: "absolute", top: 10, right: 10, background: "none", border: "none",
-                  color: C.muted, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 4,
-                  opacity: 0, transition: "opacity 0.2s",
+                  color: C.muted, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "8px",
+                  opacity: 0, transition: "opacity 0.2s", minWidth: 44, minHeight: 44,
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                 ×
               </button>
@@ -214,10 +322,11 @@ function HistorySection({ attempts, onDelete, onSelect }) {
 // ═══════════════════════════════════════════════════════════════
 // UPLOAD SCREEN (Home — "/")
 // ═══════════════════════════════════════════════════════════════
-function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onDeleteQuiz, onSelectAttempt, onSelectQuiz }) {
+function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onDeleteQuiz, onSelectAttempt, onSelectQuiz, session }) {
   const [err, setErr] = useState("");
   const [dragging, setDragging] = useState(false);
   const ref = useRef();
+  const navigate = useNavigate();
 
   const handle = (file) => {
     setErr("");
@@ -230,6 +339,10 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
       } catch { setErr("Invalid file. Please upload a valid quiz JSON file."); }
     };
     reader.readAsText(file);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   const hasHistory = !loading && attempts.length > 0;
@@ -246,6 +359,24 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
       onDrop={(e) => { e.preventDefault(); dragCounter.current = 0; setDragging(false); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); }}
       style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: hasContent ? "flex-start" : "center", padding: "48px 24px", position: "relative" }}
     >
+      {/* User bar (top-right) */}
+      {session && (
+        <div style={{
+          position: "absolute", top: 16, right: 20, display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <span style={{ fontSize: 13, color: C.muted, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {session.user?.email}
+          </span>
+          <button onClick={handleLogout} style={{
+            background: "none", border: `1px solid ${C.border}`, borderRadius: 8,
+            padding: "6px 14px", fontSize: 13, fontWeight: 600, color: C.muted,
+            cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 44,
+          }}>
+            Log out
+          </button>
+        </div>
+      )}
+
       {/* Full-page drop overlay */}
       {dragging && (
         <div style={{
@@ -265,9 +396,19 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
       <div style={{ maxWidth: 440, width: "100%", textAlign: "center" }}>
         <div style={{ fontSize: 56, marginBottom: 8 }}>🪅</div>
         <h1 style={{ fontSize: 36, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Piñata</h1>
-        <p style={{ color: C.muted, fontSize: 16, marginBottom: 36, lineHeight: 1.5 }}>
+        <p style={{ color: C.muted, fontSize: 16, marginBottom: 20, lineHeight: 1.5 }}>
           Upload a quiz file to start your Spanish practice session
         </p>
+
+        {/* Score History button */}
+        <button onClick={() => navigate("/history")} style={{
+          background: "none", border: "none", color: C.accent, fontSize: 14,
+          fontWeight: 600, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+          marginBottom: 28, padding: "8px 16px", minHeight: 44,
+        }}>
+          Score History →
+        </button>
+
         <div
           onClick={() => ref.current?.click()}
           style={{
@@ -283,6 +424,20 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
           <p style={{ color: C.muted, fontSize: 13 }}>or click to browse · JSON format</p>
           <input ref={ref} type="file" accept=".json" style={{ display: "none" }} onChange={(e) => e.target.files[0] && handle(e.target.files[0])} />
         </div>
+
+        {/* Choose Quiz File button (mobile-friendly) */}
+        <button onClick={() => ref.current?.click()} style={{
+          marginTop: 16, width: "100%", padding: "14px 24px", borderRadius: 12,
+          border: "none", background: C.accent, color: "white", fontWeight: 600,
+          fontSize: 16, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+          transition: "background 0.2s", minHeight: 48,
+        }}
+        onMouseEnter={(e) => (e.target.style.background = C.accentHover)}
+        onMouseLeave={(e) => (e.target.style.background = C.accent)}
+        >
+          Choose Quiz File
+        </button>
+
         {err && <p style={{ color: C.error, fontSize: 13, marginTop: 16 }}>{err}</p>}
         {!hasContent && (
           <p style={{ color: C.muted, fontSize: 12, marginTop: 32, lineHeight: 1.6 }}>
@@ -319,8 +474,9 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
                 <button data-qdel onClick={(e) => { e.stopPropagation(); onDeleteQuiz(q.id); }}
                   style={{
                     position: "absolute", top: 8, right: 8, background: "none", border: "none",
-                    color: C.muted, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 4,
-                    opacity: 0, transition: "opacity 0.2s",
+                    color: C.muted, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: "8px",
+                    opacity: 0, transition: "opacity 0.2s", minWidth: 44, minHeight: 44,
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                   ×
                 </button>
@@ -393,6 +549,7 @@ function MultiChoice({ q, value, onChange }) {
             background: value?.selected === i ? C.accentLight : C.card,
             color: value?.selected === i ? C.accent : C.text,
             fontWeight: value?.selected === i ? 600 : 400, fontSize: 15,
+            minHeight: 48,
           }}
         >
           <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, borderRadius: "50%", border: `1.5px solid ${value?.selected === i ? C.accent : C.border}`, marginRight: 12, fontSize: 12, fontWeight: 700, background: value?.selected === i ? C.accent : "transparent", color: value?.selected === i ? "white" : C.muted }}>
@@ -452,11 +609,12 @@ function Classify({ q, value, onChange }) {
   };
 
   const chipStyle = (isSelected) => ({
-    display: "inline-flex", alignItems: "center", padding: "7px 16px", borderRadius: 999,
+    display: "inline-flex", alignItems: "center", padding: "10px 18px", borderRadius: 999,
     fontSize: 14, fontWeight: 500, cursor: "pointer", transition: "all 0.2s", userSelect: "none",
     border: `1.5px solid ${isSelected ? C.accent : C.border}`,
     background: isSelected ? C.accentLight : C.card,
     color: isSelected ? C.accent : C.text,
+    minHeight: 44,
   });
 
   return (
@@ -485,7 +643,7 @@ function Classify({ q, value, onChange }) {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                   {placements[cat].map((item) => (
                     <span key={item} onClick={(e) => { e.stopPropagation(); removeFromCategory(item, cat); }}
-                      style={{ ...chipStyle(false), background: C.accentLight, borderColor: C.accent, color: C.accent, fontSize: 13 }}>
+                      style={{ ...chipStyle(false), background: C.accentLight, borderColor: C.accent, color: C.accent, fontSize: 13, minHeight: 44 }}>
                       {item} ×
                     </span>
                   ))}
@@ -506,8 +664,9 @@ function BackButton({ onClick, label = "Home" }) {
   return (
     <button onClick={onClick} style={{
       background: "none", border: "none", color: C.muted, fontSize: 14,
-      fontWeight: 500, cursor: "pointer", padding: "4px 0", marginBottom: 20,
+      fontWeight: 500, cursor: "pointer", padding: "10px 4px", marginBottom: 20,
       fontFamily: "'Figtree', sans-serif", display: "flex", alignItems: "center", gap: 6,
+      minHeight: 44,
     }}
     onMouseEnter={(e) => (e.currentTarget.style.color = C.accent)}
     onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
@@ -520,7 +679,7 @@ function BackButton({ onClick, label = "Home" }) {
 // ═══════════════════════════════════════════════════════════════
 // QUIZ SCREEN (Route: /quiz/:quizId)
 // ═══════════════════════════════════════════════════════════════
-function QuizRoute({ saveAttempt }) {
+function QuizRoute({ saveAttempt, session }) {
   const { quizId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -601,7 +760,7 @@ function QuizRoute({ saveAttempt }) {
     setKey((k) => k + 1);
   };
 
-  const handleFinish = (finalAnswers) => {
+  const handleFinish = async (finalAnswers) => {
     const res = data.questions.map((qu, i) => grade(qu, finalAnswers[i]));
     const correct = res.filter((r) => r.correct).length;
     const breakdown = Object.entries(
@@ -616,12 +775,14 @@ function QuizRoute({ saveAttempt }) {
     const quizKey = data.meta?.unit != null && data.meta?.lesson != null
       ? `u${data.meta.unit}-l${data.meta.lesson}` : "unknown";
 
+    const percentage = Math.round((correct / total) * 100);
+
     const attempt = {
       timestamp: Date.now(),
       quizKey,
       quizId: numericId,
       meta: { title: data.meta?.title, description: data.meta?.description, unit: data.meta?.unit, lesson: data.meta?.lesson },
-      score: { correct, total, percentage: Math.round((correct / total) * 100) },
+      score: { correct, total, percentage },
       breakdown,
       answers: finalAnswers,
       results: res,
@@ -630,7 +791,34 @@ function QuizRoute({ saveAttempt }) {
 
     saveAttempt(attempt);
     clearProgress(numericId);
-    navigate(`/quiz/${quizId}/results`, { state: { attempt } });
+
+    // Save to Supabase (cloud backup — non-blocking)
+    let supabaseRecordId = null;
+    try {
+      const questionBreakdown = data.questions.map((qu, i) => ({
+        type: qu.type,
+        prompt: qu.prompt,
+        correct: res[i].correct,
+      }));
+
+      const { data: inserted, error } = await supabase.from("quiz_results").insert({
+        user_id: session?.user?.id,
+        lesson_title: data.meta?.title || null,
+        lesson_number: data.meta?.lesson ?? null,
+        unit_number: data.meta?.unit ?? null,
+        score: correct,
+        total,
+        percentage,
+        overrides: 0,
+        question_breakdown: questionBreakdown,
+      }).select("id").single();
+
+      if (!error && inserted) supabaseRecordId = inserted.id;
+    } catch (err) {
+      console.warn("Supabase save failed:", err);
+    }
+
+    navigate(`/quiz/${quizId}/results`, { state: { attempt, supabaseRecordId } });
   };
 
   const next = () => {
@@ -648,20 +836,24 @@ function QuizRoute({ saveAttempt }) {
   const QComponent = { fill_blank: FillBlank, multiple_choice: MultiChoice, translate: Translate, classify: Classify }[q.type];
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 20px" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 20px 32px" }}>
       <div style={{ maxWidth: 580, width: "100%" }}>
-        <BackButton onClick={() => navigate("/")} />
-
-        {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.muted }}>{idx + 1} / {total}</span>
-            <span style={{ fontSize: 12, color: C.accent, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              {typeLabels[q.type] || q.type}
-            </span>
-          </div>
-          <div style={{ height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ height: "100%", background: C.accent, borderRadius: 2, transition: "width 0.4s ease", width: `${((idx + 1) / total) * 100}%` }} />
+        {/* Sticky progress header */}
+        <div style={{
+          position: "sticky", top: 0, zIndex: 10, background: C.bg,
+          paddingTop: 32, paddingBottom: 16,
+        }}>
+          <BackButton onClick={() => navigate("/")} />
+          <div style={{ marginBottom: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: C.muted }}>{idx + 1} / {total}</span>
+              <span style={{ fontSize: 12, color: C.accent, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {typeLabels[q.type] || q.type}
+              </span>
+            </div>
+            <div style={{ height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: "100%", background: C.accent, borderRadius: 2, transition: "width 0.4s ease", width: `${((idx + 1) / total) * 100}%` }} />
+            </div>
           </div>
         </div>
 
@@ -678,7 +870,8 @@ function QuizRoute({ saveAttempt }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 24 }}>
           <button onClick={skip} style={{
             background: "transparent", border: "none", color: C.muted, fontSize: 14,
-            fontWeight: 500, cursor: "pointer", padding: "8px 0", fontFamily: "'Figtree', sans-serif",
+            fontWeight: 500, cursor: "pointer", padding: "12px 8px", fontFamily: "'Figtree', sans-serif",
+            minHeight: 44,
           }}>
             Skip →
           </button>
@@ -689,6 +882,7 @@ function QuizRoute({ saveAttempt }) {
               padding: "13px 36px", borderRadius: 12, fontWeight: 600, fontSize: 15,
               cursor: canProceed() ? "pointer" : "not-allowed", transition: "all 0.2s",
               fontFamily: "'Figtree', sans-serif", opacity: canProceed() ? 1 : 0.5,
+              minHeight: 48,
             }}
             onMouseEnter={(e) => canProceed() && (e.target.style.background = C.accentHover)}
             onMouseLeave={(e) => canProceed() && (e.target.style.background = C.accent)}
@@ -710,13 +904,13 @@ function QuizRoute({ saveAttempt }) {
 
 // ═══════════════════════════════════════════════════════════════
 // RESULTS PAGE (Route: /quiz/:quizId/results)
-// Merges ScoreScreen + ReviewScreen into one page
 // ═══════════════════════════════════════════════════════════════
-function ResultsRoute() {
+function ResultsRoute({ session }) {
   const { quizId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [overrides, setOverrides] = useState({});
+  const supabaseRecordId = useRef(location.state?.supabaseRecordId || null);
 
   // Data comes from router state (just finished quiz or clicked history card)
   const attempt = location.state?.attempt;
@@ -735,6 +929,28 @@ function ResultsRoute() {
   const hasOverrides = Object.keys(overrides).length > 0;
 
   const msg = pct >= 90 ? ["¡Excelente!", "🎉"] : pct >= 70 ? ["¡Muy bien!", "👏"] : pct >= 50 ? ["¡Buen esfuerzo!", "💪"] : ["¡Sigue practicando!", "📚"];
+
+  // Debounced Supabase update when overrides change
+  const overrideTimerRef = useRef(null);
+  useEffect(() => {
+    if (!supabaseRecordId.current || Object.keys(overrides).length === 0) return;
+    clearTimeout(overrideTimerRef.current);
+    overrideTimerRef.current = setTimeout(async () => {
+      try {
+        const overrideCount = Object.keys(overrides).length;
+        const newCorrect = results.filter((r, i) => r.correct || overrides[i]).length;
+        const newPct = Math.round((newCorrect / total) * 100);
+        await supabase.from("quiz_results").update({
+          score: newCorrect,
+          percentage: newPct,
+          overrides: overrideCount,
+        }).eq("id", supabaseRecordId.current);
+      } catch (err) {
+        console.warn("Supabase override update failed:", err);
+      }
+    }, 800);
+    return () => clearTimeout(overrideTimerRef.current);
+  }, [overrides, results, total]);
 
   const handleOverride = (idx, value = true) => {
     setOverrides((p) => {
@@ -847,7 +1063,7 @@ function ResultsRoute() {
             <button onClick={() => navigate(`/quiz/${quizId}?q=1`)} style={{
               background: C.accent, color: "white", border: "none", padding: "13px 28px",
               borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: "pointer",
-              fontFamily: "'Figtree', sans-serif", transition: "background 0.2s",
+              fontFamily: "'Figtree', sans-serif", transition: "background 0.2s", minHeight: 48,
             }}
             onMouseEnter={(e) => (e.target.style.background = C.accentHover)}
             onMouseLeave={(e) => (e.target.style.background = C.accent)}
@@ -857,7 +1073,7 @@ function ResultsRoute() {
             <button onClick={() => navigate("/")} style={{
               background: "transparent", color: C.text, border: `1.5px solid ${C.border}`,
               padding: "13px 28px", borderRadius: 12, fontWeight: 600, fontSize: 15,
-              cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+              cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 48,
             }}>
               New Quiz
             </button>
@@ -913,9 +1129,9 @@ function ResultsRoute() {
                 {showOverrideButtons && wasOriginallyWrong && !wasOverridden && q.type !== "multiple_choice" && (
                   <button onClick={() => handleOverride(i)} style={{
                     marginTop: 12, background: "transparent", border: `1.5px solid ${C.border}`,
-                    borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                    borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 600,
                     color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
-                    transition: "all 0.2s",
+                    transition: "all 0.2s", minHeight: 44,
                   }}
                   onMouseEnter={(e) => { e.target.style.borderColor = C.success; e.target.style.color = C.success; }}
                   onMouseLeave={(e) => { e.target.style.borderColor = C.border; e.target.style.color = C.muted; }}
@@ -926,8 +1142,9 @@ function ResultsRoute() {
                 {showOverrideButtons && wasOverridden && (
                   <button onClick={() => handleOverride(i, false)} style={{
                     marginTop: 12, background: "transparent", border: `1.5px solid ${C.border}`,
-                    borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500,
+                    borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 500,
                     color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+                    minHeight: 44,
                   }}>
                     Undo override
                   </button>
@@ -942,9 +1159,108 @@ function ResultsRoute() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SCORE HISTORY SCREEN (Route: /history)
+// ═══════════════════════════════════════════════════════════════
+function HistoryRoute({ session }) {
+  const navigate = useNavigate();
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("quiz_results")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        if (!error && data) setResults(data);
+      } catch (err) {
+        console.warn("Failed to fetch history:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [session]);
+
+  const streak = useMemo(() => computeStreak(results), [results]);
+  const avg = useMemo(() => {
+    if (!results.length) return 0;
+    return Math.round(results.reduce((s, r) => s + r.percentage, 0) / results.length);
+  }, [results]);
+  const showStats = results.length >= 3;
+
+  return (
+    <div className="fade-in" style={{ minHeight: "100vh", padding: "32px 20px" }}>
+      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+        <BackButton onClick={() => navigate("/")} />
+        <h1 style={{ fontSize: 28, color: C.text, marginBottom: 24 }}>Score History</h1>
+
+        {/* Stats banner */}
+        {showStats && (
+          <div style={{
+            display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap",
+          }}>
+            {[
+              { label: "Average", value: `${avg}%` },
+              { label: "Streak", value: `${streak} day${streak !== 1 ? "s" : ""}` },
+              { label: "Total", value: results.length },
+            ].map((s) => (
+              <div key={s.label} style={{
+                flex: 1, minWidth: 100, background: C.card, border: `1px solid ${C.border}`,
+                borderRadius: 14, padding: "16px 12px", textAlign: "center",
+              }}>
+                <div style={{ fontSize: 22, fontWeight: 700, color: C.text, fontFamily: "'DM Serif Display', serif" }}>{s.value}</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {loading ? (
+          <p style={{ color: C.muted, fontSize: 16, textAlign: "center", marginTop: 48 }}>Loading history...</p>
+        ) : results.length === 0 ? (
+          <div style={{ textAlign: "center", marginTop: 48 }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
+            <p style={{ color: C.muted, fontSize: 16 }}>No quiz results yet. Complete a quiz to see your history!</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {results.map((r) => (
+              <div key={r.id} className="fade-in" style={{
+                background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
+                padding: "16px 20px", display: "flex", alignItems: "center", gap: 14,
+              }}>
+                <MiniScoreCircle pct={r.percentage} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {r.lesson_title || "Quiz"}
+                  </div>
+                  <div style={{ fontSize: 12, color: C.muted }}>
+                    {r.unit_number != null && r.lesson_number != null
+                      ? `Unit ${r.unit_number} · Lesson ${r.lesson_number} · `
+                      : ""}{r.score}/{r.total} correct
+                    {r.overrides > 0 ? ` (${r.overrides} override${r.overrides !== 1 ? "s" : ""})` : ""}
+                  </div>
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
+                  {formatDate(new Date(r.created_at).getTime())}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HOME ROUTE WRAPPER
 // ═══════════════════════════════════════════════════════════════
-function HomeRoute({ history }) {
+function HomeRoute({ history, session }) {
   const navigate = useNavigate();
   const { attempts, quizzes, loading, saveQuiz, deleteAttempt, deleteQuiz } = history;
 
@@ -974,6 +1290,7 @@ function HomeRoute({ history }) {
       onDeleteQuiz={deleteQuiz}
       onSelectAttempt={handleSelectAttempt}
       onSelectQuiz={handleSelectQuiz}
+      session={session}
     />
   );
 }
@@ -983,14 +1300,46 @@ function HomeRoute({ history }) {
 // ═══════════════════════════════════════════════════════════════
 export default function App() {
   const history = useQuizHistory();
+  const [session, setSession] = useState(undefined);
 
   useEffect(() => { injectStyles(); }, []);
 
+  // Auth state
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Loading state
+  if (session === undefined) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🪅</div>
+          <p style={{ color: C.muted, fontSize: 16, fontFamily: "'Figtree', system-ui, sans-serif" }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated
+  if (!session) {
+    return <LoginScreen />;
+  }
+
   return (
     <Routes>
-      <Route path="/" element={<HomeRoute history={history} />} />
-      <Route path="/quiz/:quizId" element={<QuizRoute saveAttempt={history.saveAttempt} />} />
-      <Route path="/quiz/:quizId/results" element={<ResultsRoute />} />
+      <Route path="/" element={<HomeRoute history={history} session={session} />} />
+      <Route path="/quiz/:quizId" element={<QuizRoute saveAttempt={history.saveAttempt} session={session} />} />
+      <Route path="/quiz/:quizId/results" element={<ResultsRoute session={session} />} />
+      <Route path="/history" element={<HistoryRoute session={session} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
