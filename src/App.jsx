@@ -813,7 +813,7 @@ function FillBlank({ q, value, onChange, onSubmit }) {
               <input key={pi} ref={(el) => (inputRefs.current[ci] = el)}
                 type="text" value={blanks[ci] || ""} onChange={(e) => update(ci, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(ci, e)}
-                placeholder="" autoComplete="off" autoFocus={ci === 0}
+                placeholder="" autoComplete="off"
                 style={{
                   display: "inline-block", border: `2.5px solid ${C.border}`, borderRadius: 10,
                   background: C.inputBg, padding: "6px 12px", margin: "0 4px",
