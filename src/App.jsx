@@ -13,18 +13,17 @@ const injectStyles = () => {
   const s = document.createElement("style");
   s.id = "sq-styles";
   s.textContent = `
-    @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #FAF7F2; font-family: 'Figtree', system-ui, sans-serif; color: #2C2420; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom, 0); overflow-x: hidden; }
-    h1, h2, h3, h4 { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; }
-    input[type="text"], textarea { font-family: 'Figtree', system-ui, sans-serif; }
-    ::placeholder { color: #B5ADA6; }
+    body { background: #F0FAF8; font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif; color: #1A2F2B; -webkit-font-smoothing: antialiased; padding-bottom: env(safe-area-inset-bottom, 0); overflow-x: hidden; }
+    h1, h2, h3, h4 { font-family: 'Nunito', sans-serif; font-weight: 800; }
+    input[type="text"], textarea { font-family: 'Nunito', sans-serif; }
+    ::placeholder { color: #B0E0D8; }
     .fade-in { animation: fadeIn 0.4s ease-out both; }
     .slide-in-right { animation: slideInRight 0.3s ease-out both; }
     .slide-in-left { animation: slideInLeft 0.3s ease-out both; }
     .slide-up { animation: slideUp 0.3s ease-out both; }
     .score-anim { animation: countUp 0.6s 0.5s ease-out both; }
-    .skeleton { background: linear-gradient(90deg, #E8E2DC 25%, #F0EBE6 50%, #E8E2DC 75%); background-size: 400px 100%; animation: shimmer 1.5s infinite linear; border-radius: 8px; }
+    .skeleton { background: linear-gradient(90deg, #D4F0EB 25%, #E0F5F1 50%, #D4F0EB 75%); background-size: 400px 100%; animation: shimmer 1.5s infinite linear; border-radius: 8px; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
     @keyframes slideInLeft { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
@@ -41,10 +40,10 @@ const injectStyles = () => {
 };
 
 const C = {
-  bg: "#FAF7F2", card: "#FFFFFF", accent: "#B8622D", accentLight: "#F5EDE6",
-  accentHover: "#9E5324", text: "#2C2420", muted: "#8C7E76", success: "#2A7D5F",
-  successLight: "#EBF5EE", error: "#B84040", errorLight: "#FDEDEE",
-  border: "#E8E2DC", inputBg: "#FDFCFA", overlay: "rgba(44, 36, 32, 0.45)",
+  bg: "#F0FAF8", card: "#FFFFFF", accent: "#00B4A0", accentLight: "#E0F5F1",
+  accentHover: "#008F7E", text: "#1A2F2B", muted: "#5E8078", success: "#00C48C",
+  successLight: "#E0F8F0", error: "#FF6584", errorLight: "#FFF0F3",
+  border: "#D4F0EB", inputBg: "#F0FAF8", overlay: "rgba(26, 47, 43, 0.45)",
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -106,6 +105,23 @@ const shuffle = (arr) => {
 const typeLabels = { fill_blank: "Fill in the Blanks", multiple_choice: "Multiple Choice", translate: "Translate", classify: "Classify" };
 const typeShortLabels = { fill_blank: "Fill", multiple_choice: "MC", translate: "Trans", classify: "Classify" };
 
+const typeColors = {
+  fill_blank: { bg: "#E0F5F1", text: "#008F7E" },
+  multiple_choice: { bg: "#FBEAF0", text: "#993556" },
+  translate: { bg: "#E6F1FB", text: "#0C447C" },
+  classify: { bg: "#FAEEDA", text: "#854F0B" },
+};
+
+const getResultMsg = (pct) => {
+  if (pct === 100) return { msg: "\u00a1Perfecto! \ud83c\udf89", sub: "Flawless victory" };
+  if (pct >= 91) return { msg: "\u00a1Casi perfecto!", sub: "So close to perfection" };
+  if (pct >= 76) return { msg: "\u00a1Excelente!", sub: "You're really getting this" };
+  if (pct >= 51) return { msg: "\u00a1Muy bien!", sub: "Great work, keep it up" };
+  if (pct >= 26) return { msg: "\u00a1Vas por buen camino!", sub: "You're on the right track" };
+  if (pct >= 1) return { msg: "\u00a1Sigue intentando!", sub: "You're building the foundation" };
+  return { msg: "\u00a1No te rindas!", sub: "Keep practicing, you'll get there" };
+};
+
 const relativeTime = (ts) => {
   const diff = Date.now() - ts;
   if (diff < 60000) return "just now";
@@ -148,21 +164,21 @@ function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfi
       background: C.overlay, animation: "overlayFade 0.2s ease-out",
     }} onClick={onCancel}>
       <div className="slide-up" style={{
-        background: C.card, borderRadius: 20, padding: 32, maxWidth: 340, width: "calc(100% - 48px)",
-        boxShadow: "0 8px 32px rgba(44,36,32,0.15)", textAlign: "center",
+        background: C.card, borderRadius: 16, padding: 32, maxWidth: 340, width: "calc(100% - 48px)",
+        boxShadow: "0 8px 32px rgba(0,60,50,0.15)", textAlign: "center",
       }} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ fontSize: 20, color: C.text, marginBottom: 8, lineHeight: 1.3 }}>{title}</h3>
-        <p style={{ color: C.muted, fontSize: 15, lineHeight: 1.6, marginBottom: 24 }}>{message}</p>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8, lineHeight: 1.3 }}>{title}</h3>
+        <p style={{ color: C.muted, fontSize: 15, fontWeight: 600, lineHeight: 1.6, marginBottom: 24 }}>{message}</p>
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={onCancel} style={{
-            flex: 1, padding: "14px 16px", borderRadius: 12, border: `1.5px solid ${C.border}`,
-            background: "transparent", color: C.text, fontWeight: 600, fontSize: 15,
-            cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 48,
+            flex: 1, padding: "14px 16px", borderRadius: 14, border: `2px solid ${C.border}`,
+            background: "transparent", color: C.text, fontWeight: 700, fontSize: 15,
+            cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 48,
           }}>{cancelLabel || "Cancel"}</button>
           <button onClick={onConfirm} style={{
-            flex: 1, padding: "14px 16px", borderRadius: 12, border: "none",
-            background: C.accent, color: "white", fontWeight: 600, fontSize: 15,
-            cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 48,
+            flex: 1, padding: "14px 16px", borderRadius: 14, border: "none",
+            background: C.accent, color: "white", fontWeight: 800, fontSize: 15,
+            cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 48,
           }}>{confirmLabel || "Leave"}</button>
         </div>
       </div>
@@ -173,8 +189,8 @@ function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfi
 function SkeletonCard() {
   return (
     <div style={{
-      background: C.card, borderRadius: 16, padding: 24,
-      boxShadow: "0 1px 3px rgba(44,36,32,0.04), 0 4px 12px rgba(44,36,32,0.03)",
+      background: C.card, borderRadius: 16, padding: 16,
+      boxShadow: "0 1px 4px rgba(0,60,50,0.06)",
     }}>
       <div className="skeleton" style={{ width: "65%", height: 20, marginBottom: 12 }} />
       <div className="skeleton" style={{ width: "40%", height: 14 }} />
@@ -188,7 +204,7 @@ function Confetti() {
       left: Math.random() * 100,
       delay: Math.random() * 2,
       dur: 2 + Math.random() * 2,
-      color: ["#B8622D", "#2A7D5F", "#F5A623", "#E8625C", "#4A90D9", "#9B59B6"][i % 6],
+      color: ["#00B4A0", "#00C48C", "#FF6584", "#7ED8C9", "#4A90D9", "#F5A623"][i % 6],
       size: 6 + Math.random() * 6,
       circle: Math.random() > 0.5,
     })), []);
@@ -207,7 +223,7 @@ function Confetti() {
   );
 }
 
-function MiniScoreCircle({ pct, size = 40 }) {
+function MiniScoreCircle({ pct, size = 44 }) {
   const r = (size - 6) / 2;
   const circ = 2 * Math.PI * r;
   const color = pct >= 70 ? C.success : pct >= 50 ? C.accent : C.error;
@@ -218,7 +234,7 @@ function MiniScoreCircle({ pct, size = 40 }) {
         strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ}
         transform={`rotate(-90 ${size / 2} ${size / 2})`} />
       <text x={size / 2} y={size / 2} textAnchor="middle" dominantBaseline="central"
-        fill={color} fontSize="10" fontWeight="700" fontFamily="'Figtree', sans-serif">
+        fill={color} fontSize="11" fontWeight="700" fontFamily="'Nunito', sans-serif">
         {pct}%
       </text>
     </svg>
@@ -262,15 +278,15 @@ function AddQuizSheet({ open, onClose, onLoad }) {
         onDrop={(e) => { e.preventDefault(); dragCounter.current = 0; setDragging(false); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); }}
       >
         <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: "0 auto 20px" }} />
-        <h3 style={{ fontSize: 20, color: C.text, marginBottom: 16, textAlign: "center" }}>Add Quiz</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 16, textAlign: "center" }}>Add Quiz</h3>
         <button onClick={() => ref.current?.click()} style={{
-          width: "100%", padding: "16px 24px", borderRadius: 12, border: "none",
-          background: C.accent, color: "white", fontWeight: 600, fontSize: 16,
-          cursor: "pointer", fontFamily: "'Figtree', sans-serif", marginBottom: 16, minHeight: 52,
-          transition: "background 0.2s",
+          width: "100%", padding: "14px 24px", borderRadius: 14, border: "none",
+          background: C.accent, color: "white", fontWeight: 800, fontSize: 15,
+          cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 16, minHeight: 52,
+          transition: "filter 0.1s, transform 0.1s",
         }}
-        onMouseEnter={(e) => (e.target.style.background = C.accentHover)}
-        onMouseLeave={(e) => (e.target.style.background = C.accent)}
+        onMouseEnter={(e) => (e.target.style.filter = "brightness(1.05)")}
+        onMouseLeave={(e) => (e.target.style.filter = "none")}
         >Choose Quiz File</button>
         <input ref={ref} type="file" accept=".json" style={{ display: "none" }}
           onChange={(e) => { if (e.target.files[0]) handle(e.target.files[0]); }} />
@@ -279,9 +295,9 @@ function AddQuizSheet({ open, onClose, onLoad }) {
           padding: "24px 16px", textAlign: "center",
           background: dragging ? C.accentLight : "transparent", transition: "all 0.2s",
         }}>
-          <p style={{ color: C.muted, fontSize: 14 }}>or drag & drop a JSON file here</p>
+          <p style={{ color: C.muted, fontSize: 14, fontWeight: 600 }}>or drag & drop a JSON file here</p>
         </div>
-        {err && <p style={{ color: C.error, fontSize: 13, marginTop: 12, textAlign: "center" }}>{err}</p>}
+        {err && <p style={{ color: C.error, fontSize: 13, fontWeight: 600, marginTop: 12, textAlign: "center" }}>{err}</p>}
       </div>
     </div>
   );
@@ -298,19 +314,19 @@ function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const inputStyle = {
-    width: "100%", padding: "14px 18px", borderRadius: 12,
-    border: `1.5px solid ${C.border}`, background: C.inputBg,
-    fontSize: 16, color: C.text, outline: "none", marginBottom: 14,
-    fontFamily: "'Figtree', sans-serif", transition: "border-color 0.2s",
+    width: "100%", padding: "14px 18px", borderRadius: 14,
+    border: `2.5px solid ${C.border}`, background: C.inputBg,
+    fontSize: 15, fontWeight: 600, color: C.text, outline: "none", marginBottom: 14,
+    fontFamily: "'Nunito', sans-serif", transition: "border-color 0.2s",
     boxSizing: "border-box", minHeight: 48,
   };
 
   const btnStyle = (enabled) => ({
-    width: "100%", padding: "14px 24px", borderRadius: 12, border: "none",
+    width: "100%", padding: "14px 24px", borderRadius: 14, border: "none",
     background: enabled ? C.accent : C.border,
-    color: "white", fontWeight: 600, fontSize: 16,
+    color: "white", fontWeight: 800, fontSize: 15,
     cursor: enabled ? "pointer" : "not-allowed",
-    fontFamily: "'Figtree', sans-serif", transition: "background 0.2s", minHeight: 52,
+    fontFamily: "'Nunito', sans-serif", transition: "filter 0.1s, transform 0.1s", minHeight: 52,
   });
 
   const handleMagicLink = async (e) => {
@@ -345,8 +361,8 @@ function LoginScreen() {
     }}>
       <div style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
         <img src="/icons/logo.png" alt="Piñata" style={{ width: 120, height: 120, marginBottom: 8 }} />
-        <h1 style={{ fontSize: 32, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Piñata</h1>
-        <p style={{ color: C.muted, fontSize: 15, marginBottom: 36, lineHeight: 1.6 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 8 }}>Piñata</h1>
+        <p style={{ color: C.muted, fontSize: 15, fontWeight: 600, marginBottom: 36, lineHeight: 1.6 }}>
           Sign in to track your Spanish quiz scores
         </p>
         {sent ? (
@@ -355,13 +371,13 @@ function LoginScreen() {
             padding: "24px 20px", textAlign: "center",
           }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>✉️</div>
-            <p style={{ fontWeight: 600, color: C.success, marginBottom: 4 }}>Check your email!</p>
-            <p style={{ color: C.muted, fontSize: 14 }}>
+            <p style={{ fontWeight: 700, color: C.success, marginBottom: 4 }}>Check your email!</p>
+            <p style={{ color: C.muted, fontSize: 14, fontWeight: 600 }}>
               We sent a magic link to <strong style={{ color: C.text }}>{email}</strong>
             </p>
             <button onClick={() => setSent(false)} style={{
               marginTop: 16, background: "none", border: "none", color: C.accent,
-              fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+              fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
             }}>Use a different email</button>
           </div>
         ) : (
@@ -378,19 +394,19 @@ function LoginScreen() {
               style={btnStyle(!loading && email.trim() && password)}>
               {loading ? "Signing in..." : "Sign In"}
             </button>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0", color: C.muted, fontSize: 13 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "18px 0", color: C.muted, fontSize: 13, fontWeight: 600 }}>
               <div style={{ flex: 1, height: 1, background: C.border }} />
               <span>or</span>
               <div style={{ flex: 1, height: 1, background: C.border }} />
             </div>
             <button type="button" onClick={handleMagicLink} disabled={loading || !email.trim()} style={{
               ...btnStyle(!loading && email.trim()), background: "none",
-              border: `1.5px solid ${(!loading && email.trim()) ? C.accent : C.border}`,
+              border: `2.5px solid ${(!loading && email.trim()) ? C.accent : C.border}`,
               color: (!loading && email.trim()) ? C.accent : C.muted,
             }}>
               {loading ? "Sending..." : "Send Magic Link"}
             </button>
-            {error && <p style={{ color: C.error, fontSize: 13, marginTop: 12 }}>{error}</p>}
+            {error && <p style={{ color: C.error, fontSize: 13, fontWeight: 600, marginTop: 12 }}>{error}</p>}
           </form>
         )}
       </div>
@@ -437,7 +453,7 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
       .then(({ data }) => {
         if (data) {
           const map = {};
-          data.forEach((p) => { map[p.quiz_title] = (p.current_index ?? 0) + 1; });
+          data.forEach((p) => { map[p.quiz_title] = { current: (p.current_index ?? 0) + 1, answers: p.answers || {} }; });
           setQuizProgress(map);
         }
       });
@@ -446,6 +462,8 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
   const displayName = session?.user?.user_metadata?.display_name
     || session?.user?.user_metadata?.full_name
     || session?.user?.email?.split("@")[0] || "there";
+
+  const streak = useMemo(() => computeStreak(cloudHistory), [cloudHistory]);
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
@@ -468,7 +486,7 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
     <div className="fade-in" onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
       style={{ minHeight: "100vh", background: C.bg }}>
       {pullDistance > 0 && (
-        <div style={{ textAlign: "center", padding: `${pullDistance * 0.3}px 0`, color: C.muted, fontSize: 13, transition: "padding 0.1s" }}>
+        <div style={{ textAlign: "center", padding: `${pullDistance * 0.3}px 0`, color: C.muted, fontSize: 13, fontWeight: 600, transition: "padding 0.1s" }}>
           <span style={{ display: "inline-block", transform: `rotate(${pullDistance > 50 ? 180 : 0}deg)`, transition: "transform 0.2s" }}>↓</span>
           {pullDistance > 50 ? " Release to refresh" : " Pull to refresh"}
         </div>
@@ -476,8 +494,11 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
 
       {/* Sticky header */}
       <div style={{ position: "sticky", top: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h1 style={{ fontSize: 22, color: C.text, lineHeight: 1.3 }}>Hola, {displayName} 👋</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, lineHeight: 1.3 }}>Hola, {displayName}</h1>
+            <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 2 }}>Ready to practice?</p>
+          </div>
           <button onClick={handleLogout} style={{
             background: "none", border: "none", cursor: "pointer", padding: 8,
             minWidth: 44, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center",
@@ -490,47 +511,61 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
             </svg>
           </button>
         </div>
-        {stats ? (
-          <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-            {[`${stats.count} quizzes taken`, `Avg: ${stats.avg}%`, `Best: ${stats.best}%`].map((t) => (
-              <span key={t} style={{
-                padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                background: C.accentLight, color: C.accent,
-              }}>{t}</span>
-            ))}
-          </div>
-        ) : !historyLoading && cloudHistory.length === 0 ? (
-          <p style={{ color: C.muted, fontSize: 13, marginBottom: 12 }}>Complete your first quiz!</p>
-        ) : null}
-        <div style={{ display: "flex", borderBottom: `1px solid ${C.border}` }}>
+
+        {/* Stats badges with streak */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, marginTop: 8, flexWrap: "wrap" }}>
+          {streak > 0 && (
+            <span style={{
+              padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+              background: C.accent, color: "#fff",
+            }}>{"\ud83d\udd25"} {streak} day streak</span>
+          )}
+          {stats ? (
+            <>
+              <span style={{
+                padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+                background: C.accentLight, color: C.accentHover,
+              }}>Avg: {stats.avg}%</span>
+              <span style={{
+                padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+                background: C.accentLight, color: C.accentHover,
+              }}>Best: {stats.best}%</span>
+            </>
+          ) : !historyLoading && cloudHistory.length === 0 && streak === 0 ? (
+            <p style={{ color: C.muted, fontSize: 13, fontWeight: 600 }}>Complete your first quiz!</p>
+          ) : null}
+        </div>
+
+        {/* Tab bar — pill style */}
+        <div style={{ display: "flex", borderRadius: 12, background: C.accentLight, padding: 4, marginBottom: 16 }}>
           {["Quizzes", "History"].map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab.toLowerCase())} style={{
-              flex: 1, padding: "12px 0", background: "none", border: "none",
-              borderBottom: `2px solid ${activeTab === tab.toLowerCase() ? C.accent : "transparent"}`,
-              color: activeTab === tab.toLowerCase() ? C.accent : C.muted,
-              fontWeight: 600, fontSize: 15, cursor: "pointer",
-              fontFamily: "'Figtree', sans-serif", transition: "all 0.2s", marginBottom: -1,
+              flex: 1, padding: "8px 0", background: activeTab === tab.toLowerCase() ? C.card : "transparent",
+              border: "none", borderRadius: 10, color: activeTab === tab.toLowerCase() ? C.accentHover : C.muted,
+              fontWeight: 700, fontSize: 13, cursor: "pointer",
+              fontFamily: "'Nunito', sans-serif", transition: "all 0.15s",
+              boxShadow: activeTab === tab.toLowerCase() ? "0 1px 3px rgba(0,60,50,0.08)" : "none",
             }}>{tab}</button>
           ))}
         </div>
       </div>
 
       {/* Tab content */}
-      <div style={{ padding: "16px 20px 32px", maxWidth: 520, margin: "0 auto", width: "100%" }}>
+      <div style={{ padding: "0 16px 32px", maxWidth: 520, margin: "0 auto", width: "100%" }}>
         {activeTab === "quizzes" ? (
           <div key="quizzes" className="fade-in">
             {loading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
               </div>
             ) : quizzes.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px" }}>
                 <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.8 }}>📚</div>
-                <p style={{ color: C.text, fontSize: 18, fontWeight: 600, marginBottom: 4, fontFamily: "'DM Serif Display', serif" }}>No quizzes yet</p>
-                <p style={{ color: C.muted, fontSize: 14, lineHeight: 1.6 }}>Upload your first quiz to get started!</p>
+                <p style={{ color: C.text, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>No quizzes yet</p>
+                <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>Upload your first quiz to get started!</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {quizzes.map((q) => {
                   const title = q.data.meta?.title || "Quiz";
                   const unit = q.data.meta?.unit;
@@ -538,45 +573,82 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
                   const qCount = q.data.questions?.length || 0;
                   const lastScore = lastScores[title];
                   const progress = quizProgress[title];
-                  const scoreColor = lastScore >= 70 ? C.success : lastScore >= 50 ? C.accent : C.error;
 
                   return (
                     <div key={q.id} className="fade-in" onClick={() => onSelectQuiz(q)}
                       style={{
-                        background: C.card, borderRadius: 16, padding: 24, cursor: "pointer",
-                        boxShadow: "0 1px 3px rgba(44,36,32,0.04), 0 4px 12px rgba(44,36,32,0.03)",
+                        background: C.card, borderRadius: 16, padding: 16, cursor: "pointer",
+                        boxShadow: "0 1px 4px rgba(0,60,50,0.06)",
                         transition: "transform 0.15s, box-shadow 0.15s", position: "relative",
+                        border: progress ? `2.5px solid ${C.accent}` : "1px solid transparent",
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(44,36,32,0.06), 0 8px 20px rgba(44,36,32,0.06)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(44,36,32,0.04), 0 4px 12px rgba(44,36,32,0.03)"; }}>
-                      <h3 style={{
-                        fontSize: 18, color: C.text, marginBottom: 6, lineHeight: 1.3,
-                        paddingRight: (progress || lastScore !== undefined) ? 80 : 0,
-                        fontFamily: "'DM Serif Display', serif",
-                      }}>{title}</h3>
-                      <p style={{ fontSize: 13, color: C.muted, fontWeight: 500, lineHeight: 1.5 }}>
-                        {unit != null && lesson != null ? `Unit ${unit} · Lesson ${lesson} · ` : ""}{qCount} questions
-                      </p>
-                      {(progress || lastScore !== undefined) && (
-                        <div style={{
-                          position: "absolute", top: 16, right: 20,
-                          display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6,
-                        }}>
-                          {progress && (
-                            <span style={{
-                              background: C.accentLight, color: C.accent,
-                              padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                            }}>Resume (Q{progress}/{qCount})</span>
-                          )}
-                          {lastScore !== undefined && (
-                            <span style={{
-                              width: 38, height: 38, borderRadius: "50%", background: scoreColor, color: "white",
-                              display: "flex", alignItems: "center", justifyContent: "center",
-                              fontSize: 11, fontWeight: 700,
-                            }}>{lastScore}%</span>
-                          )}
+                      onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,60,50,0.1)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,60,50,0.06)"; }}>
+
+                      {/* In progress badge */}
+                      {progress && (
+                        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+                          <span style={{
+                            padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+                            background: C.accent, color: "#fff",
+                          }}>In progress</span>
                         </div>
                       )}
+
+                      <h3 style={{
+                        fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 4, lineHeight: 1.3,
+                        paddingRight: !progress && lastScore !== undefined ? 50 : 0,
+                      }}>{title}</h3>
+                      <p style={{ fontSize: 12, color: C.muted, fontWeight: 600, lineHeight: 1.5, marginBottom: progress ? 12 : 4 }}>
+                        {unit != null && lesson != null ? `Unit ${unit} \u00b7 Lesson ${lesson} \u00b7 ` : ""}{qCount} questions
+                      </p>
+
+                      {/* Segmented progress bar for in-progress quizzes */}
+                      {progress && (
+                        <div style={{ display: "flex", gap: 3, padding: 3, background: "#D4F0EB", borderRadius: 10, height: 14, marginBottom: 12 }}>
+                          {Array.from({ length: qCount }, (_, i) => {
+                            let segColor;
+                            if (i < progress.current - 1) {
+                              const ans = progress.answers[i];
+                              segColor = ans && ans.skipped ? C.error : C.success;
+                            } else if (i === progress.current - 1) {
+                              segColor = "rgba(0, 180, 160, 0.4)";
+                            } else {
+                              segColor = "#E0F5F1";
+                            }
+                            return <div key={i} style={{ flex: 1, borderRadius: 7, background: segColor }} />;
+                          })}
+                        </div>
+                      )}
+
+                      {/* Continue button for in-progress */}
+                      {progress && (
+                        <button onClick={(e) => { e.stopPropagation(); onSelectQuiz(q); }} style={{
+                          width: "100%", padding: "12px", borderRadius: 14, border: `2.5px solid ${C.accent}`,
+                          background: "transparent", color: C.text, fontWeight: 800, fontSize: 15,
+                          cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "all 0.15s",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = "#fff"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.text; }}>
+                          Continue →
+                        </button>
+                      )}
+
+                      {/* Last score badge (when not in progress) */}
+                      {!progress && lastScore !== undefined && (
+                        <div style={{
+                          position: "absolute", top: 16, right: 16,
+                        }}>
+                          <span style={{
+                            width: 38, height: 38, borderRadius: "50%",
+                            background: lastScore >= 70 ? C.success : lastScore >= 50 ? C.accent : C.error,
+                            color: "white", display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 11, fontWeight: 700,
+                          }}>{lastScore}%</span>
+                        </div>
+                      )}
+
+                      {/* Delete button */}
                       <button onClick={(e) => { e.stopPropagation(); onDeleteQuiz(q.id); }}
                         style={{
                           position: "absolute", bottom: 8, right: 8, background: "none", border: "none",
@@ -591,51 +663,53 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
                 })}
               </div>
             )}
+            {/* Add quiz button */}
             <button onClick={() => setShowAddQuiz(true)} style={{
-              width: "100%", padding: "14px", borderRadius: 12, marginTop: 16,
-              border: `1.5px dashed ${C.border}`, background: "transparent",
-              color: C.muted, fontWeight: 600, fontSize: 15, cursor: "pointer",
-              fontFamily: "'Figtree', sans-serif", transition: "all 0.2s", minHeight: 48,
+              width: "100%", padding: "14px", borderRadius: 14, marginTop: 16,
+              border: `2px dashed ${C.border}`, background: C.accentLight,
+              color: C.muted, fontWeight: 700, fontSize: 14, cursor: "pointer",
+              fontFamily: "'Nunito', sans-serif", transition: "all 0.2s", minHeight: 48,
+              textAlign: "center",
             }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}>
-              + Add Quiz
+              + Add quiz
             </button>
           </div>
         ) : (
           <div key="history" className="fade-in">
             {historyLoading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
               </div>
             ) : cloudHistory.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px" }}>
                 <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.8 }}>📊</div>
-                <p style={{ color: C.text, fontSize: 16, fontWeight: 600, fontFamily: "'DM Serif Display', serif" }}>No quiz results yet</p>
-                <p style={{ color: C.muted, fontSize: 14, marginTop: 4 }}>Complete a quiz to see your history!</p>
+                <p style={{ color: C.text, fontSize: 16, fontWeight: 800 }}>No quiz results yet</p>
+                <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 4 }}>Complete a quiz to see your history!</p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {cloudHistory.map((r) => (
                   <div key={r.id} className="fade-in" onClick={() => navigate("/history/view", { state: { cloudRecord: r } })} style={{
-                    background: C.card, borderRadius: 14, padding: "16px 20px",
-                    display: "flex", alignItems: "center", gap: 14,
-                    boxShadow: "0 1px 2px rgba(44,36,32,0.03)",
+                    background: C.card, borderRadius: 14, padding: "14px 16px",
+                    display: "flex", alignItems: "center", gap: 12,
+                    boxShadow: "0 1px 4px rgba(0,60,50,0.06)",
                     cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s",
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(44,36,32,0.06)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(44,36,32,0.03)"; }}>
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,60,50,0.1)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,60,50,0.06)"; }}>
                     <MiniScoreCircle pct={r.percentage} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {r.lesson_title || "Quiz"}
                       </div>
-                      <div style={{ fontSize: 13, color: C.muted }}>
-                        {r.score}/{r.total}
+                      <div style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>
+                        {r.score}/{r.total} correct
                         {r.overrides > 0 ? ` (+${r.overrides} override${r.overrides !== 1 ? "s" : ""})` : ""}
                       </div>
                     </div>
-                    <div style={{ fontSize: 12, color: C.muted, whiteSpace: "nowrap" }}>
+                    <div style={{ fontSize: 11, color: C.accent, fontWeight: 700, whiteSpace: "nowrap" }}>
                       {relativeTime(new Date(r.created_at).getTime())}
                     </div>
                   </div>
@@ -672,7 +746,7 @@ function FillBlank({ q, value, onChange }) {
 
   return (
     <div>
-      <div style={{ fontSize: 20, lineHeight: 2.4, marginBottom: 8 }}>
+      <div style={{ fontSize: 18, fontWeight: 600, lineHeight: 2.4, marginBottom: 8 }}>
         {parts.map((p, pi) => {
           if (/^___+$/.test(p)) {
             const ci = idx++;
@@ -682,46 +756,47 @@ function FillBlank({ q, value, onChange }) {
                 onKeyDown={(e) => handleKeyDown(ci, e)}
                 placeholder="..." autoComplete="off"
                 style={{
-                  display: "inline-block", border: `2px solid ${C.accent}40`, borderRadius: 8,
-                  background: `${C.accent}10`, padding: "6px 12px", margin: "0 4px",
-                  textAlign: "center", color: C.accent, fontWeight: 600, outline: "none",
+                  display: "inline-block", border: `2.5px solid ${C.border}`, borderRadius: 10,
+                  background: C.inputBg, padding: "6px 12px", margin: "0 4px",
+                  textAlign: "center", color: C.accent, fontWeight: 700, outline: "none",
                   minWidth: 100, minHeight: 44, fontSize: "inherit", lineHeight: "inherit",
-                  fontFamily: "'Figtree', sans-serif", transition: "all 0.2s",
+                  fontFamily: "'Nunito', sans-serif", transition: "all 0.2s",
                 }}
                 onFocus={(e) => { e.target.style.borderColor = C.accent; e.target.style.boxShadow = `0 0 0 3px ${C.accent}20`; }}
-                onBlur={(e) => { e.target.style.borderColor = `${C.accent}40`; e.target.style.boxShadow = "none"; }}
+                onBlur={(e) => { e.target.style.borderColor = C.border; e.target.style.boxShadow = "none"; }}
               />
             );
           }
           return <span key={pi}>{p}</span>;
         })}
       </div>
-      {q.hint && <p style={{ color: C.muted, fontSize: 13, fontStyle: "italic", marginTop: 12 }}>💡 {q.hint}</p>}
+      {q.hint && <p style={{ color: C.muted, fontSize: 12, fontWeight: 600, marginTop: 12, lineHeight: 1.5 }}>💡 {q.hint}</p>}
     </div>
   );
 }
 
 function MultiChoice({ q, value, onChange }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {q.options.map((opt, i) => {
         const sel = value?.selected === i;
         return (
           <div key={i} onClick={() => onChange({ selected: i })}
             style={{
-              padding: "16px 20px", borderRadius: 14, cursor: "pointer", transition: "all 0.2s",
-              border: `1.5px solid ${sel ? C.accent : C.border}`,
-              background: sel ? C.accentLight : C.card, color: sel ? C.accent : C.text,
-              fontWeight: sel ? 600 : 400, fontSize: 15, minHeight: 52,
-              display: "flex", alignItems: "center", transform: sel ? "scale(1.01)" : "none",
+              padding: "14px 16px", borderRadius: 14, cursor: "pointer", transition: "all 0.15s",
+              border: `2.5px solid ${sel ? C.accent : C.border}`,
+              background: sel ? C.accentLight : C.card, color: C.text,
+              fontWeight: 600, fontSize: 14, minHeight: 52,
+              display: "flex", alignItems: "center", gap: 10,
             }}>
             <span style={{
               display: "inline-flex", alignItems: "center", justifyContent: "center",
-              width: 28, height: 28, borderRadius: "50%", marginRight: 14, flexShrink: 0,
-              fontSize: 12, fontWeight: 700, transition: "all 0.2s",
-              border: `1.5px solid ${sel ? C.accent : C.border}`,
-              background: sel ? C.accent : "transparent", color: sel ? "white" : C.muted,
-            }}>{String.fromCharCode(65 + i)}</span>
+              width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+              transition: "all 0.15s",
+              border: `2.5px solid ${sel ? C.accent : "#B0E0D8"}`,
+              background: sel ? C.accent : "transparent",
+              boxShadow: sel ? "inset 0 0 0 4px #fff" : "none",
+            }} />
             {opt}
           </div>
         );
@@ -739,7 +814,7 @@ function Translate({ q, value, onChange }) {
   return (
     <div>
       {q.direction && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, color: C.text, fontSize: 15, fontWeight: 600 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, color: C.muted, fontSize: 14, fontWeight: 700 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
           </svg>
@@ -749,13 +824,14 @@ function Translate({ q, value, onChange }) {
       <textarea ref={ref} value={value?.text || ""} onChange={(e) => onChange({ text: e.target.value })}
         placeholder="Type your translation here..." rows={2}
         style={{
-          width: "100%", padding: 16, borderRadius: 12, border: `1.5px solid ${C.border}`,
-          background: C.inputBg, fontSize: 16, resize: "none", outline: "none", overflow: "hidden",
-          lineHeight: 1.6, color: C.text, transition: "border-color 0.2s", minHeight: 56,
+          width: "100%", padding: 14, borderRadius: 14, border: `2.5px solid ${C.border}`,
+          background: "transparent", fontSize: 15, fontWeight: 600, resize: "none", outline: "none", overflow: "hidden",
+          lineHeight: 1.6, color: C.text, transition: "border-color 0.2s", minHeight: 80,
+          fontFamily: "'Nunito', sans-serif",
         }}
         onFocus={(e) => (e.target.style.borderColor = C.accent)}
         onBlur={(e) => (e.target.style.borderColor = C.border)} />
-      {q.hint && <p style={{ color: C.muted, fontSize: 13, fontStyle: "italic", marginTop: 10 }}>💡 {q.hint}</p>}
+      {q.hint && <p style={{ color: C.muted, fontSize: 12, fontWeight: 600, marginTop: 10, lineHeight: 1.5 }}>💡 {q.hint}</p>}
     </div>
   );
 }
@@ -839,11 +915,11 @@ function Classify({ q, value, onChange }) {
 
   const chip = (isSel, isPlaced) => ({
     display: "inline-flex", alignItems: "center", padding: isPlaced ? "8px 14px" : "10px 18px",
-    borderRadius: 999, fontSize: isPlaced ? 13 : 14, fontWeight: 500, cursor: "pointer",
+    borderRadius: 20, fontSize: isPlaced ? 13 : 14, fontWeight: 600, cursor: "pointer",
     transition: "all 0.2s", userSelect: "none", minHeight: 44,
-    border: `1.5px solid ${isSel || isPlaced ? C.accent : C.border}`,
+    border: `2.5px solid ${isSel || isPlaced ? C.accent : C.border}`,
     background: isSel || isPlaced ? C.accentLight : C.card,
-    color: isSel || isPlaced ? C.accent : C.text,
+    color: isSel || isPlaced ? C.accentHover : C.text,
   });
 
   return (
@@ -859,7 +935,7 @@ function Classify({ q, value, onChange }) {
         </div>
       )}
       {selected && !dragging && (
-        <p style={{ color: C.accent, fontSize: 13, marginBottom: 12, fontWeight: 500 }}>
+        <p style={{ color: C.accent, fontSize: 13, fontWeight: 600, marginBottom: 12 }}>
           Tap a category below to place "{selected}"
         </p>
       )}
@@ -868,15 +944,15 @@ function Classify({ q, value, onChange }) {
           <div key={cat} ref={(el) => (catRefs.current[cat] = el)}>
             <div onClick={() => placeInCategory(cat)}
               style={{
-                border: `1.5px ${placements[cat]?.length ? "solid" : "dashed"} ${hoveredCat === cat ? C.accent : selected ? C.accent + "88" : C.border}`,
-                borderRadius: 12, padding: 14, minHeight: 56,
+                border: `2.5px ${placements[cat]?.length ? "solid" : "dashed"} ${hoveredCat === cat ? C.accent : selected ? C.accent + "88" : C.border}`,
+                borderRadius: 14, padding: 14, minHeight: 56,
                 cursor: selected ? "pointer" : "default", transition: "all 0.2s",
                 background: hoveredCat === cat ? C.accentLight : selected ? `${C.accentLight}44` : "transparent",
                 transform: hoveredCat === cat ? "scale(1.01)" : "none",
               }}>
               <p style={{
-                fontSize: 13, fontWeight: 700, color: C.muted, textTransform: "uppercase",
-                letterSpacing: 0.5, marginBottom: placements[cat]?.length ? 10 : 0,
+                fontSize: 11, fontWeight: 700, color: C.muted, textTransform: "uppercase",
+                letterSpacing: 1, marginBottom: placements[cat]?.length ? 10 : 0,
               }}>{cat}</p>
               {placements[cat]?.length > 0 && (
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -894,9 +970,9 @@ function Classify({ q, value, onChange }) {
         <div style={{
           position: "fixed", left: dragPos.x - dragOffset.current.x, top: dragPos.y - dragOffset.current.y,
           zIndex: 9999, pointerEvents: "none", display: "inline-flex", alignItems: "center",
-          padding: "10px 18px", borderRadius: 999, fontSize: 14, fontWeight: 500,
-          background: C.accentLight, border: `1.5px solid ${C.accent}`, color: C.accent,
-          boxShadow: "0 8px 24px rgba(44,36,32,0.15)", transform: "scale(1.05)", whiteSpace: "nowrap",
+          padding: "10px 18px", borderRadius: 20, fontSize: 14, fontWeight: 600,
+          background: C.accentLight, border: `2.5px solid ${C.accent}`, color: C.accentHover,
+          boxShadow: "0 8px 24px rgba(0,60,50,0.15)", transform: "scale(1.05)", whiteSpace: "nowrap",
         }}>{dragging}</div>,
         document.body
       )}
@@ -972,7 +1048,7 @@ function QuizRoute({ saveAttempt, session }) {
   if (loadError) return <Navigate to="/" replace />;
   if (!data) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <p style={{ color: C.muted, fontSize: 16 }}>Loading quiz...</p>
+      <p style={{ color: C.muted, fontSize: 16, fontWeight: 600 }}>Loading quiz...</p>
     </div>
   );
 
@@ -1096,6 +1172,7 @@ function QuizRoute({ saveAttempt, session }) {
   };
 
   const QComponent = { fill_blank: FillBlank, multiple_choice: MultiChoice, translate: Translate, classify: Classify }[q.type];
+  const tc = typeColors[q.type] || { bg: C.accentLight, text: C.accentHover };
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: C.bg }}>
@@ -1117,96 +1194,98 @@ function QuizRoute({ saveAttempt, session }) {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <button onClick={handleHomeClick} style={{
-            background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 500,
-            cursor: "pointer", padding: "8px 4px", fontFamily: "'Figtree', sans-serif",
-            display: "flex", alignItems: "center", gap: 4, minHeight: 44,
+            background: "none", border: "none", color: C.muted, fontSize: 14, fontWeight: 700,
+            cursor: "pointer", padding: "8px 4px", fontFamily: "'Nunito', sans-serif",
+            display: "flex", alignItems: "center", gap: 6, minHeight: 44,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = C.accent)}
           onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
             Home
           </button>
           <span style={{
-            fontSize: 12, color: C.accent, fontWeight: 600, padding: "4px 12px",
-            borderRadius: 999, background: C.accentLight, letterSpacing: 0.3,
+            fontSize: 11, fontWeight: 700, padding: "4px 10px",
+            borderRadius: 8, background: tc.bg, color: tc.text,
           }}>{typeLabels[q.type] || q.type}</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>
-            {idx + 1} of {total}
-          </span>
-          <div style={{ flex: 1, height: 6, background: C.border, borderRadius: 3, overflow: "hidden" }}>
-            <div style={{
-              height: "100%", background: C.accent, borderRadius: 3,
-              transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-              width: `${((idx + 1) / total) * 100}%`,
-            }} />
-          </div>
+
+        {/* Progress counter */}
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.accent, marginBottom: 8 }}>
+          {idx + 1} of {total}
+        </div>
+
+        {/* Segmented progress bar */}
+        <div style={{ display: "flex", gap: 3, padding: 3, background: "#D4F0EB", borderRadius: 10, height: 12 }}>
+          {data.questions.map((_, i) => {
+            let segColor;
+            if (i < idx) {
+              const a = answers[i];
+              segColor = a && a.skipped ? C.error : C.success;
+            } else if (i === idx) {
+              segColor = "rgba(0, 180, 160, 0.4)";
+            } else {
+              segColor = "#E0F5F1";
+            }
+            return <div key={i} style={{ flex: 1, borderRadius: 6, background: segColor, transition: "background 0.3s ease-out" }} />;
+          })}
         </div>
       </div>
 
       {/* Question area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "0 20px" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "0 16px" }}>
         <div style={{ maxWidth: 580, width: "100%" }}>
           <div key={key} className={slideDir === "right" ? "slide-in-right" : "slide-in-left"} style={{
-            background: C.card, border: `1px solid ${C.border}`, borderRadius: 20,
-            padding: "32px 24px", boxShadow: "0 1px 3px rgba(44,36,32,0.04), 0 6px 16px rgba(44,36,32,0.03)",
+            background: C.card, borderRadius: 16, padding: "24px 20px",
+            boxShadow: "0 1px 4px rgba(0,60,50,0.06)",
           }}>
-            <h2 style={{ fontSize: 20, lineHeight: 1.4, marginBottom: 24, color: C.text }}>
+            <h2 style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.4, marginBottom: 20, color: C.text }}>
               {q.prompt.includes("___") && q.type === "fill_blank" ? "" : q.prompt}
             </h2>
             {QComponent && <QComponent q={q} value={ans} onChange={setAnswer} />}
           </div>
 
           {data.meta?.title && (
-            <p style={{ textAlign: "center", color: C.muted, fontSize: 12, marginTop: 24, opacity: 0.6 }}>
+            <p style={{ textAlign: "center", color: C.muted, fontSize: 12, fontWeight: 600, marginTop: 20, opacity: 0.6 }}>
               {data.meta.title}
             </p>
           )}
         </div>
       </div>
 
-      {/* Sticky footer */}
+      {/* Sticky footer — Skip + Check */}
       <div style={{
-        position: "sticky", bottom: 0, background: C.bg, padding: "12px 20px 16px",
+        position: "sticky", bottom: 0, background: C.bg, padding: "12px 16px 16px",
         borderTop: `1px solid ${C.border}`,
         paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
       }}>
         <div style={{ maxWidth: 580, margin: "0 auto", display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Back */}
-          <button onClick={prev} style={{
-            background: "none", border: `1.5px solid ${C.border}`, borderRadius: 12,
-            width: 48, height: 48, cursor: "pointer", display: "flex",
-            alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "border-color 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = C.accent)}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = C.border)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-
           {/* Skip */}
           <button onClick={skip} style={{
-            background: "none", border: "none", color: C.muted, fontSize: 14,
-            fontWeight: 500, cursor: "pointer", padding: "12px 8px",
-            fontFamily: "'Figtree', sans-serif", minHeight: 48, whiteSpace: "nowrap",
-          }}>Skip</button>
+            background: "transparent", border: `2px solid ${C.border}`, borderRadius: 14,
+            padding: "14px 20px", color: C.muted, fontSize: 14, fontWeight: 700,
+            cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 52,
+            display: "flex", alignItems: "center", gap: 4,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Skip
+          </button>
 
-          {/* Next / Finish */}
+          {/* Check / Finish */}
           <button onClick={next} disabled={!canProceed()}
             style={{
               flex: 1, background: canProceed() ? C.accent : C.border, color: "white",
-              border: "none", padding: "14px 24px", borderRadius: 12, fontWeight: 600,
-              fontSize: 16, cursor: canProceed() ? "pointer" : "not-allowed",
-              transition: "all 0.2s", fontFamily: "'Figtree', sans-serif",
+              border: "none", padding: "14px 24px", borderRadius: 14, fontWeight: 800,
+              fontSize: 15, cursor: canProceed() ? "pointer" : "not-allowed",
+              transition: "all 0.15s", fontFamily: "'Nunito', sans-serif",
               opacity: canProceed() ? 1 : 0.5, minHeight: 52,
             }}
-            onMouseEnter={(e) => canProceed() && (e.target.style.background = C.accentHover)}
-            onMouseLeave={(e) => canProceed() && (e.target.style.background = C.accent)}>
-            {idx === total - 1 ? "Finish" : "Next"}
+            onMouseEnter={(e) => canProceed() && (e.target.style.filter = "brightness(1.05)")}
+            onMouseLeave={(e) => canProceed() && (e.target.style.filter = "none")}>
+            {idx === total - 1 ? "Finish" : "Check"}
           </button>
         </div>
       </div>
@@ -1225,6 +1304,7 @@ function ResultsRoute({ session }) {
   const [reviewFilter, setReviewFilter] = useState("all");
   const supabaseRecordId = useRef(location.state?.supabaseRecordId || null);
   const reviewRef = useRef(null);
+  const [overallStats, setOverallStats] = useState(null);
 
   const attempt = location.state?.attempt;
   const cloudRecord = location.state?.cloudRecord;
@@ -1264,11 +1344,23 @@ function ResultsRoute({ session }) {
   const correct = effectiveResults.filter((r) => r.correct).length;
   const total = questions.length;
   const pct = Math.round((correct / total) * 100);
-  const circ = 2 * Math.PI * 54;
   const hasOverrides = Object.keys(overrides).length > 0;
   const showConfetti = pct >= 80;
 
-  const msg = pct >= 90 ? "¡Excelente!" : pct >= 70 ? "¡Muy bien!" : pct >= 50 ? "¡Buen esfuerzo!" : "¡Sigue practicando!";
+  const { msg: resultMsg, sub: resultSub } = getResultMsg(pct);
+  const scoreColor = pct >= 70 ? C.success : pct >= 50 ? C.accent : C.error;
+
+  // Fetch overall stats for progress section
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    supabase.from("quiz_results").select("percentage").eq("user_id", session.user.id)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const avg = Math.round(data.reduce((s, r) => s + r.percentage, 0) / data.length);
+          setOverallStats({ count: data.length, avg });
+        }
+      });
+  }, [session?.user?.id]);
 
   const overrideTimerRef = useRef(null);
   useEffect(() => {
@@ -1299,25 +1391,25 @@ function ResultsRoute({ session }) {
   });
 
   const renderUserAnswer = (q, a, qIdx) => {
-    if (!a || a.skipped) return <em style={{ color: C.muted }}>Skipped</em>;
+    if (!a || a.skipped) return <em style={{ color: C.error, fontWeight: 700 }}>Skipped</em>;
     switch (q.type) {
       case "fill_blank":
         return (a.blanks || []).map((b, i) => (
           <span key={i} style={{
-            display: "inline-block", padding: "3px 10px", borderRadius: 6, marginRight: 6, marginBottom: 4, fontSize: 14,
+            display: "inline-block", padding: "3px 10px", borderRadius: 8, marginRight: 6, marginBottom: 4, fontSize: 14,
             background: results[qIdx]?.blanksCorrect?.[i] ? C.successLight : C.errorLight,
-            color: results[qIdx]?.blanksCorrect?.[i] ? C.success : C.error, fontWeight: 600,
+            color: results[qIdx]?.blanksCorrect?.[i] ? C.success : C.error, fontWeight: 700,
           }}>{b || "(empty)"}</span>
         ));
       case "multiple_choice":
-        return <span style={{ fontWeight: 500 }}>{q.options[a.selected] || "(none)"}</span>;
+        return <span style={{ fontWeight: 600 }}>{q.options[a.selected] || "(none)"}</span>;
       case "translate":
-        return <span style={{ fontWeight: 500 }}>{a.text || "(empty)"}</span>;
+        return <span style={{ fontWeight: 600 }}>{a.text || "(empty)"}</span>;
       case "classify":
         return Object.entries(a.placements || {}).map(([cat, items]) => (
           items.length > 0 && <div key={cat} style={{ marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>{cat}: </span>
-            <span style={{ fontSize: 14 }}>{items.join(", ")}</span>
+            <span style={{ fontSize: 12, color: C.muted, fontWeight: 700 }}>{cat}: </span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{items.join(", ")}</span>
           </div>
         ));
       default: return null;
@@ -1328,24 +1420,25 @@ function ResultsRoute({ session }) {
     switch (q.type) {
       case "fill_blank":
         return (q.blanks || []).map((b, i) => (
-          <span key={i} style={{ display: "inline-block", padding: "3px 10px", borderRadius: 6, marginRight: 6, background: C.successLight, color: C.success, fontWeight: 600, fontSize: 14 }}>{b}</span>
+          <span key={i} style={{ display: "inline-block", padding: "3px 10px", borderRadius: 8, marginRight: 6, background: C.successLight, color: C.success, fontWeight: 700, fontSize: 14 }}>{b}</span>
         ));
       case "multiple_choice":
-        return <span style={{ fontWeight: 500 }}>{q.options[q.answer]}</span>;
+        return <span style={{ fontWeight: 600 }}>{q.options[q.answer]}</span>;
       case "translate":
-        return <span style={{ fontWeight: 500 }}>{(q.accept || []).join(" / ")}</span>;
+        return <span style={{ fontWeight: 600 }}>{(q.accept || []).join(" / ")}</span>;
       case "classify":
         return Object.entries(q.categories).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 4 }}>
-            <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>{cat}: </span>
-            <span style={{ fontSize: 14 }}>{items.join(", ")}</span>
+            <span style={{ fontSize: 12, color: C.muted, fontWeight: 700 }}>{cat}: </span>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{items.join(", ")}</span>
           </div>
         ));
       default: return null;
     }
   };
 
-  const scoreColor = pct >= 70 ? C.success : pct >= 50 ? C.accent : C.error;
+  const incorrectCount = effectiveResults.filter((r) => !r.correct).length;
+  const correctCount = effectiveResults.filter((r) => r.correct).length;
 
   return (
     <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
@@ -1354,13 +1447,13 @@ function ResultsRoute({ session }) {
 
         {/* Back link */}
         <button onClick={() => navigate("/")} style={{
-          background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 500,
-          cursor: "pointer", padding: "8px 4px", fontFamily: "'Figtree', sans-serif",
+          background: "none", border: "none", color: C.muted, fontSize: 14, fontWeight: 700,
+          cursor: "pointer", padding: "8px 4px", fontFamily: "'Nunito', sans-serif",
           display: "flex", alignItems: "center", gap: 4, minHeight: 44, marginBottom: 8,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.color = C.accent)}
         onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
           </svg>
           Home
@@ -1368,94 +1461,132 @@ function ResultsRoute({ session }) {
 
         {/* Score card */}
         <div style={{
-          background: C.card, borderRadius: 20, padding: "32px 24px 24px", textAlign: "center",
-          boxShadow: "0 1px 3px rgba(44,36,32,0.04), 0 6px 16px rgba(44,36,32,0.03)",
+          background: C.card, borderRadius: 16, padding: "32px 24px 24px", textAlign: "center",
+          boxShadow: "0 1px 4px rgba(0,60,50,0.06)",
           marginBottom: 20,
         }}>
-          {/* Score circle */}
-          <div style={{ position: "relative", width: 110, height: 110, margin: "0 auto 12px" }}>
-            <svg width="110" height="110" viewBox="0 0 110 110" style={{ display: "block" }}>
-              <circle cx="55" cy="55" r="48" fill="none" stroke={C.border} strokeWidth="5" />
-              <circle cx="55" cy="55" r="48" fill="none" stroke={scoreColor}
-                strokeWidth="5" strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 48} strokeDashoffset={(2 * Math.PI * 48) - (pct / 100) * (2 * Math.PI * 48)}
-                transform="rotate(-90 55 55)" style={{ animation: "scoreReveal 1s ease-out forwards" }} />
-            </svg>
-            <div className="score-anim" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ fontSize: 30, fontWeight: 700, color: C.text, fontFamily: "'DM Serif Display', serif" }}>{pct}%</div>
+          {/* Score ring — CSS conic gradient donut */}
+          <div style={{
+            width: 120, height: 120, borderRadius: "50%",
+            background: `conic-gradient(${scoreColor} 0% ${pct}%, ${C.border} ${pct}% 100%)`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            margin: "0 auto 16px",
+          }}>
+            <div style={{
+              width: 90, height: 90, borderRadius: "50%", background: C.card,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <div className="score-anim" style={{ fontSize: 28, fontWeight: 900, color: scoreColor }}>
+                {pct}%
+              </div>
             </div>
           </div>
 
           {/* Message */}
-          <h1 style={{ fontSize: 24, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
-            {msg}
+          <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>
+            {resultMsg}
           </h1>
-          <p style={{ color: C.muted, fontSize: 14, marginBottom: 16 }}>
+          <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
             {correct} of {total} correct{hasOverrides ? " (inc. overrides)" : ""}
           </p>
+          <p style={{ color: C.muted, fontSize: 13, fontWeight: 600, marginBottom: 16, opacity: 0.7 }}>
+            {resultSub}
+          </p>
 
-          {/* Type breakdown — compact inline */}
+          {/* Type breakdown — with type-specific colors */}
           <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
             {Object.entries(
               questions.reduce((acc, q, i) => {
-                const t = typeShortLabels[q.type] || q.type;
+                const t = q.type;
                 if (!acc[t]) acc[t] = { correct: 0, total: 0 };
                 acc[t].total++;
                 if (effectiveResults[i].correct) acc[t].correct++;
                 return acc;
               }, {})
-            ).map(([type, s]) => (
-              <span key={type} style={{
-                padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                background: C.accentLight, color: C.accent,
-              }}>{type} {s.correct}/{s.total}</span>
-            ))}
+            ).map(([type, s]) => {
+              const tc = typeColors[type] || { bg: C.accentLight, text: C.accentHover };
+              return (
+                <span key={type} style={{
+                  padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+                  background: s.correct === s.total ? C.successLight : tc.bg,
+                  color: s.correct === s.total ? C.success : tc.text,
+                }}>{typeShortLabels[type] || type} {s.correct}/{s.total}</span>
+              );
+            })}
           </div>
 
-          {/* Action Buttons — side by side */}
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => reviewRef.current?.scrollIntoView({ behavior: "smooth" })} style={{
-              flex: 1, background: C.accent, color: "white", border: "none",
-              padding: "13px 16px", borderRadius: 12, fontWeight: 600, fontSize: 15,
-              cursor: "pointer", fontFamily: "'Figtree', sans-serif", transition: "background 0.2s", minHeight: 48,
-            }}
-            onMouseEnter={(e) => (e.target.style.background = C.accentHover)}
-            onMouseLeave={(e) => (e.target.style.background = C.accent)}>
-              Review
-            </button>
+          {/* Action Buttons */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {!isCloudView && (
               <button onClick={() => navigate(`/quiz/${quizId}?q=1`)} style={{
-                flex: 1, background: "transparent", color: C.text,
-                border: `1.5px solid ${C.border}`, padding: "13px 16px", borderRadius: 12,
-                fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 48,
-              }}>Try Again</button>
+                width: "100%", background: "transparent", color: C.text,
+                border: `2.5px solid ${C.accent}`, padding: "14px 16px", borderRadius: 14,
+                fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 48,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = C.accent; e.currentTarget.style.color = "#fff"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = C.text; }}>
+                Try again
+              </button>
             )}
+            <button onClick={() => reviewRef.current?.scrollIntoView({ behavior: "smooth" })} style={{
+              width: "100%", background: "transparent", color: C.text,
+              border: `2.5px solid ${C.border}`, padding: "14px 16px", borderRadius: 14,
+              fontWeight: 800, fontSize: 15, cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 48,
+            }}>
+              Review answers
+            </button>
           </div>
         </div>
+
+        {/* Your Progress */}
+        {overallStats && (
+          <div style={{
+            borderTop: `1px solid ${C.border}`, paddingTop: 20, marginBottom: 24, textAlign: "center",
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, color: C.muted, marginBottom: 16 }}>
+              Your Progress
+            </p>
+            <div style={{ display: "flex", justifyContent: "center", gap: 32 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: C.accentHover }}>{overallStats.count}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>quizzes</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: C.accentHover }}>{overallStats.avg}%</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>average</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 900, color: scoreColor }}>{pct}%</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>this quiz</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Review Section */}
         <div ref={reviewRef}>
           {/* Sticky review header */}
           <div style={{
             position: "sticky", top: 0, zIndex: 10, background: C.bg,
-            padding: "16px 0 12px", borderBottom: `1px solid ${C.border}`, marginBottom: 16,
+            padding: "16px 0 12px",
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-              <h2 style={{ fontSize: 22, color: C.text }}>Detailed Review</h2>
+            <div style={{ marginBottom: 12 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 4 }}>Detailed review</h2>
               <span style={{ color: C.muted, fontSize: 14, fontWeight: 600 }}>{correct}/{total} correct</span>
             </div>
             {/* Filter */}
             <div style={{ display: "flex", gap: 8 }}>
               {[
                 { key: "all", label: "All" },
-                { key: "incorrect", label: "Incorrect" },
-                { key: "correct", label: "Correct" },
+                { key: "incorrect", label: `Incorrect (${incorrectCount})` },
+                { key: "correct", label: `Correct (${correctCount})` },
               ].map((f) => (
                 <button key={f.key} onClick={() => setReviewFilter(f.key)} style={{
-                  padding: "6px 14px", borderRadius: 999, border: "none", fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", fontFamily: "'Figtree', sans-serif", transition: "all 0.2s",
-                  background: reviewFilter === f.key ? C.accent : C.accentLight,
-                  color: reviewFilter === f.key ? "white" : C.accent,
+                  padding: "6px 14px", borderRadius: 20, border: "none", fontSize: 12, fontWeight: 800,
+                  cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "all 0.15s",
+                  background: reviewFilter === f.key ? (f.key === "incorrect" ? C.error : f.key === "correct" ? C.success : C.accent) : C.accentLight,
+                  color: reviewFilter === f.key ? "white" : (f.key === "incorrect" ? C.error : f.key === "correct" ? C.success : C.accentHover),
                 }}>{f.label}</button>
               ))}
             </div>
@@ -1469,39 +1600,58 @@ function ResultsRoute({ session }) {
             const showOverrideButtons = !isFromHistory;
             return (
               <div key={i} className="fade-in" style={{
-                background: C.card, borderRadius: 16, padding: "24px 24px", marginBottom: 16,
-                border: `1px solid ${C.border}`, borderLeft: `4px solid ${r.correct ? C.success : C.error}`,
+                background: r.correct ? C.successLight : C.errorLight,
+                borderRadius: 14, padding: "14px 16px", marginBottom: 10,
+                borderLeft: `4px solid ${r.correct ? C.success : C.error}`,
               }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>Q{i + 1} · {typeLabels[q.type]}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: r.correct ? C.success : C.error }}>
-                    {wasOverridden ? "✓ Overridden" : r.correct ? "✓ Correct" : "✗ Incorrect"}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Q{i + 1} \u00b7 {typeLabels[q.type]}</span>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: r.correct ? C.success : C.error }}>
+                    {wasOverridden ? "Overridden" : r.correct ? "Correct" : "Incorrect"}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: 16, color: C.text }}>
+                <p style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.5, marginBottom: 12, color: C.text }}>
                   {q.prompt.replace(/___+/g, "______")}
                 </p>
+
+                {/* User answer (for wrong answers) */}
                 {!isCloudView && wasOriginallyWrong && (
-                  <div style={{ marginBottom: 12, padding: "12px 16px", borderRadius: 12, background: wasOverridden ? C.successLight : C.errorLight }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: wasOverridden ? C.success : C.error, marginBottom: 4 }}>Your answer:</p>
-                    <div style={{ color: wasOverridden ? C.success : C.error }}>{renderUserAnswer(q, answers[i], i)}</div>
+                  <div style={{
+                    marginBottom: 8, padding: "8px 12px", borderRadius: 10,
+                    background: wasOverridden ? C.successLight : C.errorLight,
+                    border: `1px solid ${wasOverridden ? C.success : C.error}20`,
+                  }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: wasOverridden ? C.success : C.error, marginBottom: 4 }}>Your answer:</p>
+                    <div style={{ color: wasOverridden ? C.success : C.error, fontWeight: 600 }}>{renderUserAnswer(q, answers[i], i)}</div>
                   </div>
                 )}
-                <div style={{ padding: "12px 16px", borderRadius: 12, background: C.successLight }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
-                  <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
+
+                {/* Correct answer */}
+                <div style={{
+                  padding: "8px 12px", borderRadius: 10,
+                  background: C.successLight, border: `1px solid ${C.success}20`,
+                }}>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: C.success, marginBottom: 4 }}>Correct answer:</p>
+                  <div style={{ color: C.success, fontWeight: 600 }}>{renderCorrectAnswer(q)}</div>
                 </div>
+
+                {/* Tip box */}
                 {q.explanation && (
-                  <p style={{ fontSize: 13, color: C.muted, marginTop: 12, lineHeight: 1.5, fontStyle: "italic" }}>
+                  <div style={{
+                    marginTop: 8, padding: "10px 12px", borderRadius: 10,
+                    background: "#F0FAF8", fontSize: 12, fontWeight: 600,
+                    color: C.muted, lineHeight: 1.5,
+                  }}>
                     💡 {q.explanation}
-                  </p>
+                  </div>
                 )}
+
                 {showOverrideButtons && wasOriginallyWrong && !wasOverridden && q.type !== "multiple_choice" && (
                   <button onClick={() => handleOverride(i)} style={{
-                    marginTop: 14, background: C.successLight, border: `1.5px solid ${C.success}`,
-                    borderRadius: 10, padding: "10px 18px", fontSize: 14, fontWeight: 600,
-                    color: C.success, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
-                    transition: "all 0.2s", minHeight: 44,
+                    marginTop: 10, background: C.successLight, border: `2px solid ${C.success}`,
+                    borderRadius: 10, padding: "8px 16px", fontSize: 13, fontWeight: 700,
+                    color: C.success, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                    transition: "all 0.15s", minHeight: 40,
                   }}
                   onMouseEnter={(e) => { e.target.style.background = C.success; e.target.style.color = "white"; }}
                   onMouseLeave={(e) => { e.target.style.background = C.successLight; e.target.style.color = C.success; }}>
@@ -1510,16 +1660,16 @@ function ResultsRoute({ session }) {
                 )}
                 {showOverrideButtons && wasOverridden && (
                   <button onClick={() => handleOverride(i, false)} style={{
-                    marginTop: 14, background: "transparent", border: `1.5px solid ${C.border}`,
-                    borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 500,
-                    color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 44,
+                    marginTop: 10, background: "transparent", border: `2px solid ${C.border}`,
+                    borderRadius: 10, padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                    color: C.muted, cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 40,
                   }}>Undo override</button>
                 )}
               </div>
             );
           })}
           {filteredIndices.length === 0 && (
-            <p style={{ textAlign: "center", color: C.muted, fontSize: 15, padding: "32px 0" }}>
+            <p style={{ textAlign: "center", color: C.muted, fontSize: 15, fontWeight: 600, padding: "32px 0" }}>
               No {reviewFilter} questions to show.
             </p>
           )}
@@ -1578,7 +1728,7 @@ export default function App() {
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
         <div style={{ textAlign: "center" }}>
           <img src="/icons/logo.png" alt="Piñata" style={{ width: 100, height: 100, marginBottom: 12 }} />
-          <p style={{ color: C.muted, fontSize: 16, fontFamily: "'Figtree', system-ui, sans-serif" }}>Loading...</p>
+          <p style={{ color: C.muted, fontSize: 16, fontWeight: 600, fontFamily: "'Nunito', sans-serif" }}>Loading...</p>
         </div>
       </div>
     );
@@ -1594,7 +1744,7 @@ export default function App() {
           display: "flex", alignItems: "center", gap: 6,
           background: "#FFFBEB", border: "1px solid #F59E0B",
           borderRadius: 8, padding: "5px 12px", fontSize: 12,
-          fontWeight: 600, color: "#92400E", fontFamily: "'Figtree', sans-serif",
+          fontWeight: 700, color: "#92400E", fontFamily: "'Nunito', sans-serif",
           boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
         }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B", display: "inline-block" }} />
