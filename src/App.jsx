@@ -1502,10 +1502,8 @@ function ResultsRoute({ session }) {
   const correctCount = effectiveResults.filter((r) => r.correct).length;
 
   return (
-    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
-      {showConfetti && <Confetti />}
-
-      {/* Fixed header */}
+    <>
+      {/* Fixed header — must be outside fade-in to avoid transform breaking position:fixed */}
       <div className="safe-top" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg,
         padding: "0 20px", borderBottom: `1px solid ${C.border}`,
@@ -1525,6 +1523,9 @@ function ResultsRoute({ session }) {
           </button>
         </div>
       </div>
+
+    <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
+      {showConfetti && <Confetti />}
 
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 20px 32px", paddingTop: 60 }}>
         {/* Spacer handled by paddingTop above */}
@@ -1637,8 +1638,8 @@ function ResultsRoute({ session }) {
         {/* Review Section */}
         <div ref={reviewRef}>
           {/* Sticky review header */}
-          <div className="safe-top" style={{
-            position: "sticky", top: 0, zIndex: 10, background: C.bg,
+          <div style={{
+            position: "sticky", top: 52, zIndex: 10, background: C.bg,
             padding: "16px 0 12px",
           }}>
             <div style={{ marginBottom: 12 }}>
@@ -1746,6 +1747,7 @@ function ResultsRoute({ session }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
