@@ -11,8 +11,8 @@ export default defineConfig({
         name: "Piñata - Habla español?",
         short_name: "Piñata",
         description: "Spanish quiz practice app",
-        theme_color: "#B8622D",
-        background_color: "#FAF7F2",
+        theme_color: "#00B4A0",
+        background_color: "#F0FAF8",
         display: "standalone",
         icons: [
           {

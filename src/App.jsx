@@ -1035,7 +1035,16 @@ function QuizRoute({ saveAttempt, session }) {
 
     let supabaseRecordId = null;
     try {
-      const questionBreakdown = data.questions.map((qu, i) => ({ type: qu.type, prompt: qu.prompt, correct: res[i].correct }));
+      const questionBreakdown = data.questions.map((qu, i) => ({
+        type: qu.type, prompt: qu.prompt, correct: res[i].correct,
+        ...(qu.blanks && { blanks: qu.blanks }),
+        ...(qu.options && { options: qu.options }),
+        ...(qu.answer != null && { answer: qu.answer }),
+        ...(qu.accept && { accept: qu.accept }),
+        ...(qu.categories && { categories: qu.categories }),
+        ...(qu.explanation && { explanation: qu.explanation }),
+        ...(res[i].blanksCorrect && { blanksCorrect: res[i].blanksCorrect }),
+      }));
       const { data: inserted, error } = await supabase.from("quiz_results").insert({
         user_id: session?.user?.id, lesson_title: data.meta?.title || null,
         lesson_number: data.meta?.lesson ?? null, unit_number: data.meta?.unit ?? null,
@@ -1228,8 +1237,16 @@ function ResultsRoute({ session }) {
     ({ questions, answers, results, score, breakdown } = attempt);
   } else {
     const qb = cloudRecord.question_breakdown || [];
-    questions = qb.map((q) => ({ type: q.type, prompt: q.prompt }));
-    results = qb.map((q) => ({ correct: q.correct }));
+    questions = qb.map((q) => ({
+      type: q.type, prompt: q.prompt,
+      ...(q.blanks && { blanks: q.blanks }),
+      ...(q.options && { options: q.options }),
+      ...(q.answer != null && { answer: q.answer }),
+      ...(q.accept && { accept: q.accept }),
+      ...(q.categories && { categories: q.categories }),
+      ...(q.explanation && { explanation: q.explanation }),
+    }));
+    results = qb.map((q) => ({ correct: q.correct, ...(q.blanksCorrect && { blanksCorrect: q.blanksCorrect }) }));
     answers = {};
     score = { correct: cloudRecord.score, total: cloudRecord.total, percentage: cloudRecord.percentage };
     breakdown = Object.entries(
@@ -1269,7 +1286,7 @@ function ResultsRoute({ session }) {
       } catch (err) { console.warn("Supabase override update failed:", err); }
     }, 800);
     return () => clearTimeout(overrideTimerRef.current);
-  }, [overrides, results, total, session?.user?.id, attempt.meta?.title]);
+  }, [overrides, results, total, session?.user?.id, attempt?.meta?.title]);
 
   const handleOverride = (idx, value = true) => {
     setOverrides((p) => { const n = { ...p }; if (value) n[idx] = true; else delete n[idx]; return n; });
@@ -1461,7 +1478,7 @@ function ResultsRoute({ session }) {
                     {wasOverridden ? "✓ Overridden" : r.correct ? "✓ Correct" : "✗ Incorrect"}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: isCloudView ? 0 : 16, color: C.text }}>
+                <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: 16, color: C.text }}>
                   {q.prompt.replace(/___+/g, "______")}
                 </p>
                 {!isCloudView && wasOriginallyWrong && (
@@ -1470,12 +1487,10 @@ function ResultsRoute({ session }) {
                     <div style={{ color: wasOverridden ? C.success : C.error }}>{renderUserAnswer(q, answers[i], i)}</div>
                   </div>
                 )}
-                {!isCloudView && (
-                  <div style={{ padding: "12px 16px", borderRadius: 12, background: C.successLight }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
-                    <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
-                  </div>
-                )}
+                <div style={{ padding: "12px 16px", borderRadius: 12, background: C.successLight }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
+                  <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
+                </div>
                 {q.explanation && (
                   <p style={{ fontSize: 13, color: C.muted, marginTop: 12, lineHeight: 1.5, fontStyle: "italic" }}>
                     💡 {q.explanation}
