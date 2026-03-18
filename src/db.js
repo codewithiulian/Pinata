@@ -1,5 +1,5 @@
 const DB_NAME = "spanish-quiz";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE = "attempts";
 const QUIZ_STORE = "quizzes";
 
@@ -15,13 +15,22 @@ function openDB() {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = (e) => {
       const db = req.result;
+      const oldVersion = e.oldVersion;
+
+      // Attempts store (unchanged structure)
       if (!db.objectStoreNames.contains(STORE)) {
         const store = db.createObjectStore(STORE, { keyPath: "id", autoIncrement: true });
         store.createIndex("timestamp", "timestamp");
         store.createIndex("quizKey", "quizKey");
       }
+
+      // Quizzes store: v2 used quizKey as keyPath, v3 uses autoIncrement id
+      if (oldVersion < 3 && db.objectStoreNames.contains(QUIZ_STORE)) {
+        db.deleteObjectStore(QUIZ_STORE);
+      }
       if (!db.objectStoreNames.contains(QUIZ_STORE)) {
-        const qs = db.createObjectStore(QUIZ_STORE, { keyPath: "quizKey" });
+        const qs = db.createObjectStore(QUIZ_STORE, { keyPath: "id", autoIncrement: true });
+        qs.createIndex("quizKey", "quizKey", { unique: true });
         qs.createIndex("savedAt", "savedAt");
       }
     };
@@ -99,10 +108,23 @@ export function clearAllAttempts() {
 
 export function saveQuiz(quizKey, data) {
   return tx(QUIZ_STORE, "readwrite", (store, resolve) => {
-    const req = store.put({ quizKey, data, savedAt: Date.now() });
-    req.onsuccess = () => resolve();
+    // Check if quizKey already exists — update it, otherwise insert
+    const idx = store.index("quizKey");
+    const lookup = idx.get(quizKey);
+    lookup.onsuccess = () => {
+      if (lookup.result) {
+        // Update existing record, preserving its id
+        const updated = { ...lookup.result, data, savedAt: Date.now() };
+        const putReq = store.put(updated);
+        putReq.onsuccess = () => resolve(updated.id);
+      } else {
+        const addReq = store.add({ quizKey, data, savedAt: Date.now() });
+        addReq.onsuccess = () => resolve(addReq.result);
+      }
+    };
   }).catch((err) => {
     console.warn("Failed to save quiz:", err);
+    return null;
   });
 }
 
@@ -126,9 +148,19 @@ export function getQuizzes() {
   });
 }
 
-export function deleteQuiz(quizKey) {
+export function getQuizById(id) {
+  return tx(QUIZ_STORE, "readonly", (store, resolve) => {
+    const req = store.get(id);
+    req.onsuccess = () => resolve(req.result || null);
+  }).catch((err) => {
+    console.warn("Failed to get quiz:", err);
+    return null;
+  });
+}
+
+export function deleteQuiz(id) {
   return tx(QUIZ_STORE, "readwrite", (store, resolve) => {
-    const req = store.delete(quizKey);
+    const req = store.delete(id);
     req.onsuccess = () => resolve();
   }).catch((err) => {
     console.warn("Failed to delete quiz:", err);

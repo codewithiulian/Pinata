@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { Routes, Route, useNavigate, useParams, useSearchParams, useLocation, Navigate } from "react-router-dom";
 import { useQuizHistory } from "./useQuizHistory.js";
+import { getQuizById } from "./db.js";
 
 // ═══════════════════════════════════════════════════════════════
 // STYLES
@@ -210,9 +212,9 @@ function HistorySection({ attempts, onDelete, onSelect }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// UPLOAD SCREEN
+// UPLOAD SCREEN (Home — "/")
 // ═══════════════════════════════════════════════════════════════
-function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onDeleteQuiz, onSelectAttempt }) {
+function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onDeleteQuiz, onSelectAttempt, onSelectQuiz }) {
   const [err, setErr] = useState("");
   const [dragging, setDragging] = useState(false);
   const ref = useRef();
@@ -234,8 +236,32 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
   const hasQuizzes = !loading && quizzes.length > 0;
   const hasContent = hasHistory || hasQuizzes;
 
+  const dragCounter = useRef(0);
+
   return (
-    <div className="fade-in" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: hasContent ? "flex-start" : "center", padding: "48px 24px" }}>
+    <div className="fade-in"
+      onDragEnter={(e) => { e.preventDefault(); dragCounter.current++; setDragging(true); }}
+      onDragOver={(e) => e.preventDefault()}
+      onDragLeave={(e) => { e.preventDefault(); dragCounter.current--; if (dragCounter.current <= 0) { dragCounter.current = 0; setDragging(false); } }}
+      onDrop={(e) => { e.preventDefault(); dragCounter.current = 0; setDragging(false); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); }}
+      style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: hasContent ? "flex-start" : "center", padding: "48px 24px", position: "relative" }}
+    >
+      {/* Full-page drop overlay */}
+      {dragging && (
+        <div style={{
+          position: "fixed", inset: 0, background: `${C.accentLight}dd`, zIndex: 999,
+          display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none",
+        }}>
+          <div style={{
+            border: `3px dashed ${C.accent}`, borderRadius: 24, padding: "48px 64px",
+            textAlign: "center", background: C.card, boxShadow: "0 8px 32px rgba(44,36,32,0.1)",
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
+            <p style={{ fontWeight: 600, fontSize: 18, color: C.text, marginBottom: 4 }}>Drop your quiz file</p>
+            <p style={{ color: C.muted, fontSize: 14 }}>JSON format</p>
+          </div>
+        </div>
+      )}
       <div style={{ maxWidth: 440, width: "100%", textAlign: "center" }}>
         <div style={{ fontSize: 56, marginBottom: 8 }}>📖</div>
         <h1 style={{ fontSize: 36, color: C.text, marginBottom: 8, letterSpacing: "-0.5px" }}>Práctica</h1>
@@ -244,15 +270,13 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
         </p>
         <div
           onClick={() => ref.current?.click()}
-          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => { e.preventDefault(); setDragging(false); e.dataTransfer.files[0] && handle(e.dataTransfer.files[0]); }}
           style={{
-            border: `2px dashed ${dragging ? C.accent : C.border}`,
+            border: `2px dashed ${C.border}`,
             borderRadius: 16, padding: "48px 24px", cursor: "pointer",
-            background: dragging ? C.accentLight : "transparent",
             transition: "all 0.25s ease",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.background = C.accentLight; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = "transparent"; }}
         >
           <div style={{ fontSize: 32, marginBottom: 8, opacity: 0.7 }}>📄</div>
           <p style={{ fontWeight: 600, color: C.text, marginBottom: 4 }}>Drop your quiz file here</p>
@@ -271,12 +295,12 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
           <h2 style={{ fontSize: 22, color: C.text, marginBottom: 16 }}>Saved Quizzes</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {quizzes.map((q) => (
-              <div key={q.quizKey} className="fade-in" style={{
+              <div key={q.id} className="fade-in" style={{
                 background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
                 padding: "14px 20px", display: "flex", alignItems: "center", gap: 14,
                 cursor: "pointer", transition: "border-color 0.2s", position: "relative",
               }}
-              onClick={() => onLoad(q.data)}
+              onClick={() => onSelectQuiz(q)}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; const b = e.currentTarget.querySelector("[data-qdel]"); if (b) b.style.opacity = "1"; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; const b = e.currentTarget.querySelector("[data-qdel]"); if (b) b.style.opacity = "0"; }}
               >
@@ -292,7 +316,7 @@ function UploadScreen({ onLoad, attempts, quizzes, loading, onDeleteAttempt, onD
                   </div>
                 </div>
                 <div style={{ fontSize: 13, color: C.accent, fontWeight: 600, whiteSpace: "nowrap" }}>Start →</div>
-                <button data-qdel onClick={(e) => { e.stopPropagation(); onDeleteQuiz(q.quizKey); }}
+                <button data-qdel onClick={(e) => { e.stopPropagation(); onDeleteQuiz(q.id); }}
                   style={{
                     position: "absolute", top: 8, right: 8, background: "none", border: "none",
                     color: C.muted, cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 4,
@@ -416,7 +440,6 @@ function Classify({ q, value, onChange }) {
   const placeInCategory = (cat) => {
     if (!selected) return;
     const np = { ...placements };
-    // Remove from any category first
     Object.keys(np).forEach((k) => (np[k] = (np[k] || []).filter((x) => x !== selected)));
     np[cat] = [...(np[cat] || []), selected];
     onChange({ placements: np, _selected: null });
@@ -477,14 +500,62 @@ function Classify({ q, value, onChange }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// QUIZ SCREEN
+// BACK BUTTON
 // ═══════════════════════════════════════════════════════════════
-function QuizScreen({ data, onFinish }) {
-  const [idx, setIdx] = useState(0);
+function BackButton({ onClick, label = "Home" }) {
+  return (
+    <button onClick={onClick} style={{
+      background: "none", border: "none", color: C.muted, fontSize: 14,
+      fontWeight: 500, cursor: "pointer", padding: "4px 0", marginBottom: 20,
+      fontFamily: "'Figtree', sans-serif", display: "flex", alignItems: "center", gap: 6,
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.color = C.accent)}
+    onMouseLeave={(e) => (e.currentTarget.style.color = C.muted)}
+    >
+      ← {label}
+    </button>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// QUIZ SCREEN (Route: /quiz/:quizId)
+// ═══════════════════════════════════════════════════════════════
+function QuizRoute({ saveAttempt }) {
+  const { quizId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
   const [answers, setAnswers] = useState({});
+  const [loadError, setLoadError] = useState(false);
   const [key, setKey] = useState(0);
+
+  const numericId = parseInt(quizId, 10);
+  const qParam = parseInt(searchParams.get("q") || "1", 10);
+  const idx = Math.max(0, qParam - 1);
+
+  useEffect(() => {
+    if (isNaN(numericId)) { setLoadError(true); return; }
+    let cancelled = false;
+    getQuizById(numericId).then((quiz) => {
+      if (cancelled) return;
+      if (!quiz) { setLoadError(true); return; }
+      setData(quiz.data);
+    });
+    return () => { cancelled = true; };
+  }, [numericId]);
+
+  if (loadError) return <Navigate to="/" replace />;
+  if (!data) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <p style={{ color: C.muted, fontSize: 16 }}>Loading quiz...</p>
+    </div>
+  );
+
   const q = data.questions[idx];
   const total = data.questions.length;
+
+  if (!q) return <Navigate to={`/quiz/${quizId}?q=1`} replace />;
+
   const ans = answers[idx];
 
   const setAnswer = (a) => setAnswers((p) => ({ ...p, [idx]: a }));
@@ -500,15 +571,52 @@ function QuizScreen({ data, onFinish }) {
     }
   };
 
+  const goToQuestion = (n) => {
+    setSearchParams({ q: String(n) }, { replace: true });
+    setKey((k) => k + 1);
+  };
+
+  const handleFinish = (finalAnswers) => {
+    const res = data.questions.map((qu, i) => grade(qu, finalAnswers[i]));
+    const correct = res.filter((r) => r.correct).length;
+    const breakdown = Object.entries(
+      data.questions.reduce((acc, qu, i) => {
+        if (!acc[qu.type]) acc[qu.type] = { type: qu.type, label: typeLabels[qu.type] || qu.type, correct: 0, total: 0 };
+        acc[qu.type].total++;
+        if (res[i].correct) acc[qu.type].correct++;
+        return acc;
+      }, {})
+    ).map(([, v]) => v);
+
+    const quizKey = data.meta?.unit != null && data.meta?.lesson != null
+      ? `u${data.meta.unit}-l${data.meta.lesson}` : "unknown";
+
+    const attempt = {
+      timestamp: Date.now(),
+      quizKey,
+      quizId: numericId,
+      meta: { title: data.meta?.title, description: data.meta?.description, unit: data.meta?.unit, lesson: data.meta?.lesson },
+      score: { correct, total, percentage: Math.round((correct / total) * 100) },
+      breakdown,
+      answers: finalAnswers,
+      results: res,
+      questions: data.questions,
+    };
+
+    saveAttempt(attempt);
+    navigate(`/quiz/${quizId}/results`, { state: { attempt } });
+  };
+
   const next = () => {
-    if (idx < total - 1) { setIdx(idx + 1); setKey((k) => k + 1); }
-    else onFinish(answers);
+    if (idx < total - 1) goToQuestion(idx + 2);
+    else handleFinish(answers);
   };
 
   const skip = () => {
-    setAnswers((p) => ({ ...p, [idx]: { skipped: true } }));
-    if (idx < total - 1) { setIdx(idx + 1); setKey((k) => k + 1); }
-    else onFinish({ ...answers, [idx]: { skipped: true } });
+    const updated = { ...answers, [idx]: { skipped: true } };
+    setAnswers(updated);
+    if (idx < total - 1) goToQuestion(idx + 2);
+    else handleFinish(updated);
   };
 
   const QComponent = { fill_blank: FillBlank, multiple_choice: MultiChoice, translate: Translate, classify: Classify }[q.type];
@@ -516,6 +624,8 @@ function QuizScreen({ data, onFinish }) {
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 20px" }}>
       <div style={{ maxWidth: 580, width: "100%" }}>
+        <BackButton onClick={() => navigate("/")} />
+
         {/* Header */}
         <div style={{ marginBottom: 32 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -573,107 +683,50 @@ function QuizScreen({ data, onFinish }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SCORE SCREEN
+// RESULTS PAGE (Route: /quiz/:quizId/results)
+// Merges ScoreScreen + ReviewScreen into one page
 // ═══════════════════════════════════════════════════════════════
-function ScoreScreen({ data, answers, results, overrides, onReview, onRestart, onHome }) {
+function ResultsRoute() {
+  const { quizId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [overrides, setOverrides] = useState({});
+
+  // Data comes from router state (just finished quiz or clicked history card)
+  const attempt = location.state?.attempt;
+
+  if (!attempt) return <Navigate to="/" replace />;
+
+  const { questions, answers, results, score, breakdown } = attempt;
+  const data = { questions, meta: attempt.meta };
+  const isFromHistory = !location.state?.fromQuiz;
+
   const effectiveResults = results.map((r, i) => overrides[i] ? { correct: true } : r);
   const correct = effectiveResults.filter((r) => r.correct).length;
-  const total = data.questions.length;
+  const total = questions.length;
   const pct = Math.round((correct / total) * 100);
   const circ = 2 * Math.PI * 54;
   const hasOverrides = Object.keys(overrides).length > 0;
 
   const msg = pct >= 90 ? ["¡Excelente!", "🎉"] : pct >= 70 ? ["¡Muy bien!", "👏"] : pct >= 50 ? ["¡Buen esfuerzo!", "💪"] : ["¡Sigue practicando!", "📚"];
 
-  return (
-    <div className="fade-in" style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ maxWidth: 400, width: "100%", textAlign: "center" }}>
-        {/* Score Circle */}
-        <div style={{ position: "relative", display: "inline-block", marginBottom: 24 }}>
-          <svg width="140" height="140" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="54" fill="none" stroke={C.border} strokeWidth="6" />
-            <circle
-              cx="60" cy="60" r="54" fill="none" stroke={pct >= 70 ? C.success : pct >= 50 ? C.accent : C.error}
-              strokeWidth="6" strokeLinecap="round"
-              strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ}
-              transform="rotate(-90 60 60)"
-              style={{ animation: "scoreReveal 1s ease-out forwards" }}
-            />
-          </svg>
-          <div className="score-anim" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
-            <div style={{ fontSize: 36, fontWeight: 700, color: C.text, fontFamily: "'DM Serif Display', serif" }}>{pct}%</div>
-          </div>
-        </div>
+  const handleOverride = (idx, value = true) => {
+    setOverrides((p) => {
+      const n = { ...p };
+      if (value) n[idx] = true; else delete n[idx];
+      return n;
+    });
+  };
 
-        <div style={{ fontSize: 48, marginBottom: 8 }}>{msg[1]}</div>
-        <h1 style={{ fontSize: 32, marginBottom: 8, color: C.text }}>{msg[0]}</h1>
-        <p style={{ color: C.muted, fontSize: 16, marginBottom: 32 }}>
-          {correct} of {total} correct{hasOverrides ? " (inc. overrides)" : ""}
-        </p>
-
-        {/* Type breakdown */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 36, flexWrap: "wrap" }}>
-          {Object.entries(
-            data.questions.reduce((acc, q, i) => {
-              const t = typeLabels[q.type] || q.type;
-              if (!acc[t]) acc[t] = { correct: 0, total: 0 };
-              acc[t].total++;
-              if (effectiveResults[i].correct) acc[t].correct++;
-              return acc;
-            }, {})
-          ).map(([type, stats]) => (
-            <div key={type} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 16px", fontSize: 13 }}>
-              <div style={{ fontWeight: 600, color: C.text }}>{stats.correct}/{stats.total}</div>
-              <div style={{ color: C.muted, fontSize: 11 }}>{type}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button onClick={() => onReview(results)} style={{
-            background: C.accent, color: "white", border: "none", padding: "14px 32px",
-            borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: "pointer",
-            fontFamily: "'Figtree', sans-serif", transition: "background 0.2s",
-          }}>
-            Review Answers
-          </button>
-          <button onClick={onRestart} style={{
-            background: "transparent", color: C.text, border: `1.5px solid ${C.border}`,
-            padding: "13px 32px", borderRadius: 12, fontWeight: 600, fontSize: 15,
-            cursor: "pointer", fontFamily: "'Figtree', sans-serif",
-          }}>
-            Try Again
-          </button>
-          <button onClick={onHome} style={{
-            background: "transparent", color: C.muted, border: "none",
-            padding: "10px 32px", fontSize: 14, fontWeight: 500,
-            cursor: "pointer", fontFamily: "'Figtree', sans-serif",
-          }}>
-            New Quiz
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// REVIEW SCREEN
-// ═══════════════════════════════════════════════════════════════
-function ReviewScreen({ data, answers, results, overrides, onOverride, onBack }) {
-  const effectiveResults = results.map((r, i) => overrides[i] ? { correct: true } : r);
-  const correct = effectiveResults.filter((r) => r.correct).length;
-
-  const renderUserAnswer = (q, a) => {
+  const renderUserAnswer = (q, a, qIdx) => {
     if (!a || a.skipped) return <em style={{ color: C.muted }}>Skipped</em>;
     switch (q.type) {
       case "fill_blank":
         return (a.blanks || []).map((b, i) => (
           <span key={i} style={{
             display: "inline-block", padding: "3px 10px", borderRadius: 6, marginRight: 6, marginBottom: 4, fontSize: 14,
-            background: results[data.questions.indexOf(q)]?.blanksCorrect?.[i] ? C.successLight : C.errorLight,
-            color: results[data.questions.indexOf(q)]?.blanksCorrect?.[i] ? C.success : C.error,
+            background: results[qIdx]?.blanksCorrect?.[i] ? C.successLight : C.errorLight,
+            color: results[qIdx]?.blanksCorrect?.[i] ? C.success : C.error,
             fontWeight: 600,
           }}>
             {b || "(empty)"}
@@ -718,87 +771,184 @@ function ReviewScreen({ data, answers, results, overrides, onOverride, onBack })
   return (
     <div className="fade-in" style={{ minHeight: "100vh", padding: "32px 20px" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-          <div>
-            <h1 style={{ fontSize: 28, color: C.text }}>Review</h1>
-            <p style={{ color: C.muted, fontSize: 14 }}>{correct}/{data.questions.length} correct</p>
+        <BackButton onClick={() => navigate("/")} />
+
+        {/* ── Score Section ── */}
+        <div style={{ textAlign: "center", marginBottom: 48 }}>
+          {/* Score Circle */}
+          <div style={{ position: "relative", display: "inline-block", marginBottom: 24 }}>
+            <svg width="140" height="140" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="54" fill="none" stroke={C.border} strokeWidth="6" />
+              <circle
+                cx="60" cy="60" r="54" fill="none" stroke={pct >= 70 ? C.success : pct >= 50 ? C.accent : C.error}
+                strokeWidth="6" strokeLinecap="round"
+                strokeDasharray={circ} strokeDashoffset={circ - (pct / 100) * circ}
+                transform="rotate(-90 60 60)"
+                style={{ animation: "scoreReveal 1s ease-out forwards" }}
+              />
+            </svg>
+            <div className="score-anim" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
+              <div style={{ fontSize: 36, fontWeight: 700, color: C.text, fontFamily: "'DM Serif Display', serif" }}>{pct}%</div>
+            </div>
           </div>
-          <button onClick={onBack} style={{
-            background: C.accent, color: "white", border: "none", padding: "10px 24px",
-            borderRadius: 10, fontWeight: 600, fontSize: 14, cursor: "pointer",
-            fontFamily: "'Figtree', sans-serif",
-          }}>
-            ← Back
-          </button>
+
+          <div style={{ fontSize: 48, marginBottom: 8 }}>{msg[1]}</div>
+          <h1 style={{ fontSize: 32, marginBottom: 8, color: C.text }}>{msg[0]}</h1>
+          <p style={{ color: C.muted, fontSize: 16, marginBottom: 24 }}>
+            {correct} of {total} correct{hasOverrides ? " (inc. overrides)" : ""}
+          </p>
+
+          {/* Type breakdown pills */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
+            {Object.entries(
+              questions.reduce((acc, q, i) => {
+                const t = typeLabels[q.type] || q.type;
+                if (!acc[t]) acc[t] = { correct: 0, total: 0 };
+                acc[t].total++;
+                if (effectiveResults[i].correct) acc[t].correct++;
+                return acc;
+              }, {})
+            ).map(([type, stats]) => (
+              <div key={type} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: "10px 16px", fontSize: 13 }}>
+                <div style={{ fontWeight: 600, color: C.text }}>{stats.correct}/{stats.total}</div>
+                <div style={{ color: C.muted, fontSize: 11 }}>{type}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+            <button onClick={() => navigate(`/quiz/${quizId}?q=1`)} style={{
+              background: C.accent, color: "white", border: "none", padding: "13px 28px",
+              borderRadius: 12, fontWeight: 600, fontSize: 15, cursor: "pointer",
+              fontFamily: "'Figtree', sans-serif", transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => (e.target.style.background = C.accentHover)}
+            onMouseLeave={(e) => (e.target.style.background = C.accent)}
+            >
+              Try Again
+            </button>
+            <button onClick={() => navigate("/")} style={{
+              background: "transparent", color: C.text, border: `1.5px solid ${C.border}`,
+              padding: "13px 28px", borderRadius: 12, fontWeight: 600, fontSize: 15,
+              cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+            }}>
+              New Quiz
+            </button>
+          </div>
         </div>
 
-        {/* Questions */}
-        {data.questions.map((q, i) => {
-          const r = effectiveResults[i];
-          const wasOverridden = overrides[i];
-          const wasOriginallyWrong = !results[i].correct;
-          return (
-            <div key={i} style={{
-              background: C.card, borderRadius: 14, padding: "22px 24px", marginBottom: 14,
-              border: `1px solid ${C.border}`, borderLeft: `4px solid ${r.correct ? C.success : C.error}`,
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>Q{i + 1} · {typeLabels[q.type]}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: r.correct ? C.success : C.error }}>
-                  {wasOverridden ? "✓ Overridden" : r.correct ? "✓ Correct" : "✗ Incorrect"}
-                </span>
-              </div>
-              <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: 14, color: C.text }}>
-                {q.prompt.replace(/___+/g, "______")}
-              </p>
+        {/* ── Detailed Review Section ── */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+            <h2 style={{ fontSize: 24, color: C.text }}>Detailed Review</h2>
+            <span style={{ color: C.muted, fontSize: 14 }}>{correct}/{total} correct</span>
+          </div>
 
-              {wasOriginallyWrong && (
-                <div style={{ marginBottom: 10, padding: "10px 14px", borderRadius: 10, background: wasOverridden ? C.successLight : C.errorLight }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: wasOverridden ? C.success : C.error, marginBottom: 4 }}>Your answer:</p>
-                  <div style={{ color: wasOverridden ? C.success : C.error }}>{renderUserAnswer(q, answers[i])}</div>
+          {questions.map((q, i) => {
+            const r = effectiveResults[i];
+            const wasOverridden = overrides[i];
+            const wasOriginallyWrong = !results[i].correct;
+            const showOverrideButtons = !isFromHistory;
+            return (
+              <div key={i} style={{
+                background: C.card, borderRadius: 14, padding: "22px 24px", marginBottom: 14,
+                border: `1px solid ${C.border}`, borderLeft: `4px solid ${r.correct ? C.success : C.error}`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>Q{i + 1} · {typeLabels[q.type]}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: r.correct ? C.success : C.error }}>
+                    {wasOverridden ? "✓ Overridden" : r.correct ? "✓ Correct" : "✗ Incorrect"}
+                  </span>
                 </div>
-              )}
-
-              <div style={{ padding: "10px 14px", borderRadius: 10, background: C.successLight }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
-                <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
-              </div>
-
-              {q.explanation && (
-                <p style={{ fontSize: 13, color: C.muted, marginTop: 10, lineHeight: 1.5, fontStyle: "italic" }}>
-                  💡 {q.explanation}
+                <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: 14, color: C.text }}>
+                  {q.prompt.replace(/___+/g, "______")}
                 </p>
-              )}
 
-              {/* Override button — only for originally wrong, non-multiple-choice */}
-              {onOverride && wasOriginallyWrong && !wasOverridden && q.type !== "multiple_choice" && (
-                <button onClick={() => onOverride(i)} style={{
-                  marginTop: 12, background: "transparent", border: `1.5px solid ${C.border}`,
-                  borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600,
-                  color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
-                  transition: "all 0.2s",
-                }}
-                onMouseEnter={(e) => { e.target.style.borderColor = C.success; e.target.style.color = C.success; }}
-                onMouseLeave={(e) => { e.target.style.borderColor = C.border; e.target.style.color = C.muted; }}
-                >
-                  ✓ My answer was correct
-                </button>
-              )}
-              {onOverride && wasOverridden && (
-                <button onClick={() => onOverride(i, false)} style={{
-                  marginTop: 12, background: "transparent", border: `1.5px solid ${C.border}`,
-                  borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500,
-                  color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
-                }}>
-                  Undo override
-                </button>
-              )}
-            </div>
-          );
-        })}
+                {wasOriginallyWrong && (
+                  <div style={{ marginBottom: 10, padding: "10px 14px", borderRadius: 10, background: wasOverridden ? C.successLight : C.errorLight }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: wasOverridden ? C.success : C.error, marginBottom: 4 }}>Your answer:</p>
+                    <div style={{ color: wasOverridden ? C.success : C.error }}>{renderUserAnswer(q, answers[i], i)}</div>
+                  </div>
+                )}
+
+                <div style={{ padding: "10px 14px", borderRadius: 10, background: C.successLight }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
+                  <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
+                </div>
+
+                {q.explanation && (
+                  <p style={{ fontSize: 13, color: C.muted, marginTop: 10, lineHeight: 1.5, fontStyle: "italic" }}>
+                    💡 {q.explanation}
+                  </p>
+                )}
+
+                {/* Override button — only for just-completed quizzes, originally wrong, non-MC */}
+                {showOverrideButtons && wasOriginallyWrong && !wasOverridden && q.type !== "multiple_choice" && (
+                  <button onClick={() => handleOverride(i)} style={{
+                    marginTop: 12, background: "transparent", border: `1.5px solid ${C.border}`,
+                    borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600,
+                    color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+                    transition: "all 0.2s",
+                  }}
+                  onMouseEnter={(e) => { e.target.style.borderColor = C.success; e.target.style.color = C.success; }}
+                  onMouseLeave={(e) => { e.target.style.borderColor = C.border; e.target.style.color = C.muted; }}
+                  >
+                    ✓ My answer was correct
+                  </button>
+                )}
+                {showOverrideButtons && wasOverridden && (
+                  <button onClick={() => handleOverride(i, false)} style={{
+                    marginTop: 12, background: "transparent", border: `1.5px solid ${C.border}`,
+                    borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 500,
+                    color: C.muted, cursor: "pointer", fontFamily: "'Figtree', sans-serif",
+                  }}>
+                    Undo override
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HOME ROUTE WRAPPER
+// ═══════════════════════════════════════════════════════════════
+function HomeRoute({ history }) {
+  const navigate = useNavigate();
+  const { attempts, quizzes, loading, saveQuiz, deleteAttempt, deleteQuiz } = history;
+
+  const handleLoad = async (d) => {
+    const quizKey = d.meta?.unit != null && d.meta?.lesson != null
+      ? `u${d.meta.unit}-l${d.meta.lesson}` : `quiz-${Date.now()}`;
+    const id = await saveQuiz(quizKey, d);
+    if (id != null) navigate(`/quiz/${id}?q=1`);
+  };
+
+  const handleSelectQuiz = (quiz) => {
+    navigate(`/quiz/${quiz.id}?q=1`);
+  };
+
+  const handleSelectAttempt = (attempt) => {
+    const quizId = attempt.quizId || attempt.id;
+    navigate(`/quiz/${quizId}/results`, { state: { attempt } });
+  };
+
+  return (
+    <UploadScreen
+      onLoad={handleLoad}
+      attempts={attempts}
+      quizzes={quizzes}
+      loading={loading}
+      onDeleteAttempt={deleteAttempt}
+      onDeleteQuiz={deleteQuiz}
+      onSelectAttempt={handleSelectAttempt}
+      onSelectQuiz={handleSelectQuiz}
+    />
   );
 }
 
@@ -806,81 +956,16 @@ function ReviewScreen({ data, answers, results, overrides, onOverride, onBack })
 // MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App() {
-  const [screen, setScreen] = useState("upload");
-  const [data, setData] = useState(null);
-  const [answers, setAnswers] = useState(null);
-  const [results, setResults] = useState(null);
-  const [overrides, setOverrides] = useState({});
-  const [historyAttempt, setHistoryAttempt] = useState(null);
-  const { attempts, quizzes, loading, saveAttempt, deleteAttempt, saveQuiz, deleteQuiz, refresh } = useQuizHistory();
+  const history = useQuizHistory();
 
   useEffect(() => { injectStyles(); }, []);
 
-  const handleLoad = (d) => {
-    setData(d);
-    setScreen("quiz");
-    const quizKey = d.meta?.unit != null && d.meta?.lesson != null
-      ? `u${d.meta.unit}-l${d.meta.lesson}` : `quiz-${Date.now()}`;
-    saveQuiz(quizKey, d);
-  };
-
-  const handleFinish = (ans) => {
-    setAnswers(ans);
-    setOverrides({});
-    const res = data.questions.map((q, i) => grade(q, ans[i]));
-    setResults(res);
-    setScreen("score");
-
-    const correct = res.filter((r) => r.correct).length;
-    const total = data.questions.length;
-    const breakdown = Object.entries(
-      data.questions.reduce((acc, q, i) => {
-        if (!acc[q.type]) acc[q.type] = { type: q.type, label: typeLabels[q.type] || q.type, correct: 0, total: 0 };
-        acc[q.type].total++;
-        if (res[i].correct) acc[q.type].correct++;
-        return acc;
-      }, {})
-    ).map(([, v]) => v);
-
-    const quizKey = data.meta?.unit != null && data.meta?.lesson != null
-      ? `u${data.meta.unit}-l${data.meta.lesson}` : "unknown";
-
-    saveAttempt({
-      timestamp: Date.now(),
-      quizKey,
-      meta: { title: data.meta?.title, description: data.meta?.description, unit: data.meta?.unit, lesson: data.meta?.lesson },
-      score: { correct, total, percentage: Math.round((correct / total) * 100) },
-      breakdown,
-      answers: ans,
-      results: res,
-      questions: data.questions,
-    });
-  };
-
-  const handleReview = () => { setScreen("review"); };
-  const handleRestart = () => { setAnswers(null); setResults(null); setOverrides({}); setScreen("quiz"); };
-  const handleNewQuiz = () => { setData(null); setAnswers(null); setResults(null); setOverrides({}); setHistoryAttempt(null); setScreen("upload"); };
-  const handleSelectAttempt = (attempt) => {
-    setData({ questions: attempt.questions, meta: attempt.meta });
-    setAnswers(attempt.answers);
-    setResults(attempt.results);
-    setOverrides({});
-    setHistoryAttempt(attempt);
-    setScreen("review");
-  };
-  const handleOverride = (idx, value = true) => {
-    setOverrides((p) => {
-      const n = { ...p };
-      if (value) n[idx] = true; else delete n[idx];
-      return n;
-    });
-  };
-
-  switch (screen) {
-    case "upload": return <UploadScreen onLoad={handleLoad} attempts={attempts} quizzes={quizzes} loading={loading} onDeleteAttempt={deleteAttempt} onDeleteQuiz={deleteQuiz} onSelectAttempt={handleSelectAttempt} />;
-    case "quiz": return <QuizScreen data={data} onFinish={handleFinish} />;
-    case "score": return <ScoreScreen data={data} answers={answers} results={results} overrides={overrides} onReview={handleReview} onRestart={handleRestart} onHome={handleNewQuiz} />;
-    case "review": return <ReviewScreen data={data} answers={answers} results={results} overrides={overrides} onOverride={historyAttempt ? undefined : handleOverride} onBack={historyAttempt ? handleNewQuiz : () => setScreen("score")} />;
-    default: return null;
-  }
+  return (
+    <Routes>
+      <Route path="/" element={<HomeRoute history={history} />} />
+      <Route path="/quiz/:quizId" element={<QuizRoute saveAttempt={history.saveAttempt} />} />
+      <Route path="/quiz/:quizId/results" element={<ResultsRoute />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
 }

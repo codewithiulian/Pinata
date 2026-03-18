@@ -33,16 +33,17 @@ export function useQuizHistory() {
   }, []);
 
   const saveQuiz = useCallback(async (quizKey, data) => {
-    await dbSaveQuiz(quizKey, data);
+    const id = await dbSaveQuiz(quizKey, data);
     setQuizzes((prev) => {
       const filtered = prev.filter((q) => q.quizKey !== quizKey);
-      return [{ quizKey, data, savedAt: Date.now() }, ...filtered];
+      return [{ id, quizKey, data, savedAt: Date.now() }, ...filtered];
     });
+    return id;
   }, []);
 
-  const deleteQuiz = useCallback(async (quizKey) => {
-    await dbDeleteQuiz(quizKey);
-    setQuizzes((prev) => prev.filter((q) => q.quizKey !== quizKey));
+  const deleteQuiz = useCallback(async (id) => {
+    await dbDeleteQuiz(id);
+    setQuizzes((prev) => prev.filter((q) => q.id !== id));
   }, []);
 
   return { attempts, quizzes, loading, saveAttempt, deleteAttempt, saveQuiz, deleteQuiz, refresh };
