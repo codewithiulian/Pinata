@@ -130,11 +130,29 @@ const computeStreak = (results) => {
 // ═══════════════════════════════════════════════════════════════
 function LoginScreen() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const inputStyle = {
+    width: "100%", padding: "14px 18px", borderRadius: 12,
+    border: `1.5px solid ${C.border}`, background: C.inputBg,
+    fontSize: 16, color: C.text, outline: "none", marginBottom: 14,
+    fontFamily: "'Figtree', sans-serif", transition: "border-color 0.2s",
+    boxSizing: "border-box",
+  };
+
+  const btnStyle = (enabled) => ({
+    width: "100%", padding: "14px 24px", borderRadius: 12, border: "none",
+    background: enabled ? C.accent : C.border,
+    color: "white", fontWeight: 600, fontSize: 16,
+    cursor: enabled ? "pointer" : "not-allowed",
+    fontFamily: "'Figtree', sans-serif", transition: "background 0.2s",
+    minHeight: 48,
+  });
+
+  const handleMagicLink = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
     setLoading(true);
@@ -148,6 +166,24 @@ function LoginScreen() {
       setSent(true);
     } catch (err) {
       setError(err.message || "Failed to send magic link");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordSignIn = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !password) return;
+    setLoading(true);
+    setError("");
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (err) throw err;
+    } catch (err) {
+      setError(err.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -183,28 +219,43 @@ function LoginScreen() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handlePasswordSignIn}>
             <input
               type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="your@email.com" autoComplete="email" autoFocus
-              style={{
-                width: "100%", padding: "14px 18px", borderRadius: 12,
-                border: `1.5px solid ${C.border}`, background: C.inputBg,
-                fontSize: 16, color: C.text, outline: "none", marginBottom: 14,
-                fontFamily: "'Figtree', sans-serif", transition: "border-color 0.2s",
-              }}
+              style={inputStyle}
               onFocus={(e) => (e.target.style.borderColor = C.accent)}
               onBlur={(e) => (e.target.style.borderColor = C.border)}
             />
-            <button type="submit" disabled={loading || !email.trim()} style={{
-              width: "100%", padding: "14px 24px", borderRadius: 12, border: "none",
-              background: (!loading && email.trim()) ? C.accent : C.border,
-              color: "white", fontWeight: 600, fontSize: 16, cursor: (!loading && email.trim()) ? "pointer" : "not-allowed",
-              fontFamily: "'Figtree', sans-serif", transition: "background 0.2s",
-              minHeight: 48,
+            <input
+              type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password" autoComplete="current-password"
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = C.accent)}
+              onBlur={(e) => (e.target.style.borderColor = C.border)}
+            />
+            <button type="submit" disabled={loading || !email.trim() || !password} style={btnStyle(!loading && email.trim() && password)}>
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12,
+              margin: "18px 0", color: C.muted, fontSize: 13,
+            }}>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+              <span>or</span>
+              <div style={{ flex: 1, height: 1, background: C.border }} />
+            </div>
+
+            <button type="button" onClick={handleMagicLink} disabled={loading || !email.trim()} style={{
+              ...btnStyle(!loading && email.trim()),
+              background: "none",
+              border: `1.5px solid ${(!loading && email.trim()) ? C.accent : C.border}`,
+              color: (!loading && email.trim()) ? C.accent : C.muted,
             }}>
               {loading ? "Sending..." : "Send Magic Link"}
             </button>
+
             {error && <p style={{ color: C.error, fontSize: 13, marginTop: 12 }}>{error}</p>}
           </form>
         )}
