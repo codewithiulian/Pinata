@@ -156,7 +156,7 @@ const computeStreak = (results) => {
 // ═══════════════════════════════════════════════════════════════
 // SMALL COMPONENTS
 // ═══════════════════════════════════════════════════════════════
-function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfirm, onCancel }) {
+function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfirm, onCancel, destructive }) {
   if (!open) return null;
   return (
     <div style={{
@@ -177,7 +177,7 @@ function ConfirmModal({ open, title, message, confirmLabel, cancelLabel, onConfi
           }}>{cancelLabel || "Cancel"}</button>
           <button onClick={onConfirm} style={{
             flex: 1, padding: "14px 16px", borderRadius: 14, border: "none",
-            background: C.accent, color: "white", fontWeight: 800, fontSize: 15,
+            background: destructive ? C.error : C.accent, color: "white", fontWeight: 800, fontSize: 15,
             cursor: "pointer", fontFamily: "'Nunito', sans-serif", minHeight: 48,
           }}>{confirmLabel || "Leave"}</button>
         </div>
@@ -427,6 +427,15 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
   const [quizProgress, setQuizProgress] = useState({});
   const [lastScores, setLastScores] = useState({});
   const [pullDistance, setPullDistance] = useState(0);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [headerH, setHeaderH] = useState(0);
+  const headerRef = useRef(null);
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const ro = new ResizeObserver(([e]) => setHeaderH(e.contentRect.height + parseFloat(getComputedStyle(e.target).paddingTop) + parseFloat(getComputedStyle(e.target).paddingBottom)));
+    ro.observe(headerRef.current);
+    return () => ro.disconnect();
+  }, []);
   const isPulling = useRef(false);
   const pullStartY = useRef(0);
 
@@ -492,8 +501,8 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
         </div>
       )}
 
-      {/* Sticky header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0", paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}>
+      {/* Fixed header */}
+      <div ref={headerRef} style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0", paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, lineHeight: 1.3 }}>Hola, {displayName}</h1>
@@ -549,6 +558,9 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
           ))}
         </div>
       </div>
+
+      {/* Spacer for fixed header */}
+      <div style={{ height: headerH }} />
 
       {/* Tab content */}
       <div style={{ padding: "0 16px 32px", maxWidth: 520, margin: "0 auto", width: "100%" }}>
@@ -651,9 +663,7 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
                       {/* Delete button */}
                       <button onClick={(e) => {
                           e.stopPropagation();
-                          if (window.confirm("Are you sure you want to delete this quiz? You'll lose all progress and saved data.")) {
-                            onDeleteQuiz(q.id);
-                          }
+                          setDeleteConfirmId(q.id);
                         }}
                         style={{
                           position: "absolute", top: 8, right: 8, background: "none", border: "none",
@@ -726,6 +736,12 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
       </div>
 
       <AddQuizSheet open={showAddQuiz} onClose={() => setShowAddQuiz(false)} onLoad={onLoad} />
+      <ConfirmModal open={deleteConfirmId !== null}
+        title="Delete quiz?"
+        message="You'll lose all progress and saved data for this quiz."
+        confirmLabel="Delete" cancelLabel="Cancel" destructive
+        onConfirm={() => { onDeleteQuiz(deleteConfirmId); setDeleteConfirmId(null); }}
+        onCancel={() => setDeleteConfirmId(null)} />
     </div>
   );
 }
