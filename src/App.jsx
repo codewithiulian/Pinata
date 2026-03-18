@@ -493,7 +493,7 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
       )}
 
       {/* Sticky header */}
-      <div style={{ position: "sticky", top: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0", paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, lineHeight: 1.3 }}>Hola, {displayName}</h1>
@@ -1215,7 +1215,7 @@ function QuizRoute({ saveAttempt, session }) {
       {/* Header */}
       <div style={{
         position: "sticky", top: 0, zIndex: 10, background: C.bg,
-        padding: "16px 20px 12px",
+        padding: "16px 20px 12px", paddingTop: "max(16px, env(safe-area-inset-top, 16px))",
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <button onClick={handleHomeClick} style={{
@@ -1486,7 +1486,7 @@ function ResultsRoute({ session }) {
   return (
     <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
       {showConfetti && <Confetti />}
-      <div style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 32px" }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "16px 20px 32px", paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}>
 
         {/* Back link */}
         <button onClick={() => navigate("/")} style={{
@@ -1783,7 +1783,7 @@ export default function App() {
     <>
       {pendingCount > 0 && (
         <div style={{
-          position: "fixed", top: 12, left: 12, zIndex: 9999,
+          position: "fixed", top: "max(12px, env(safe-area-inset-top, 12px))", left: 12, zIndex: 9999,
           display: "flex", alignItems: "center", gap: 6,
           background: "#FFFBEB", border: "1px solid #F59E0B",
           borderRadius: 8, padding: "5px 12px", fontSize: 12,
