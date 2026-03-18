@@ -402,6 +402,7 @@ function LoginScreen() {
 // HOME SCREEN
 // ═══════════════════════════════════════════════════════════════
 function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, session }) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("quizzes");
   const [showAddQuiz, setShowAddQuiz] = useState(false);
   const [stats, setStats] = useState(null);
@@ -616,11 +617,14 @@ function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, sess
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {cloudHistory.map((r) => (
-                  <div key={r.id} className="fade-in" style={{
+                  <div key={r.id} className="fade-in" onClick={() => navigate("/history/view", { state: { cloudRecord: r } })} style={{
                     background: C.card, borderRadius: 14, padding: "16px 20px",
                     display: "flex", alignItems: "center", gap: 14,
                     boxShadow: "0 1px 2px rgba(44,36,32,0.03)",
-                  }}>
+                    cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 2px 6px rgba(44,36,32,0.06)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(44,36,32,0.03)"; }}>
                     <MiniScoreCircle pct={r.percentage} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 600, fontSize: 15, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1214,10 +1218,30 @@ function ResultsRoute({ session }) {
   const reviewRef = useRef(null);
 
   const attempt = location.state?.attempt;
-  if (!attempt) return <Navigate to="/" replace />;
+  const cloudRecord = location.state?.cloudRecord;
+  if (!attempt && !cloudRecord) return <Navigate to="/" replace />;
 
-  const { questions, answers, results, score, breakdown } = attempt;
-  const isFromHistory = !location.state?.fromQuiz;
+  const isCloudView = !attempt && !!cloudRecord;
+
+  let questions, answers, results, score, breakdown;
+  if (attempt) {
+    ({ questions, answers, results, score, breakdown } = attempt);
+  } else {
+    const qb = cloudRecord.question_breakdown || [];
+    questions = qb.map((q) => ({ type: q.type, prompt: q.prompt }));
+    results = qb.map((q) => ({ correct: q.correct }));
+    answers = {};
+    score = { correct: cloudRecord.score, total: cloudRecord.total, percentage: cloudRecord.percentage };
+    breakdown = Object.entries(
+      qb.reduce((acc, q) => {
+        if (!acc[q.type]) acc[q.type] = { type: q.type, label: typeLabels[q.type] || q.type, correct: 0, total: 0 };
+        acc[q.type].total++;
+        if (q.correct) acc[q.type].correct++;
+        return acc;
+      }, {})
+    ).map(([, v]) => v);
+  }
+  const isFromHistory = isCloudView || !location.state?.fromQuiz;
 
   const effectiveResults = results.map((r, i) => overrides[i] ? { correct: true } : r);
   const correct = effectiveResults.filter((r) => r.correct).length;
@@ -1382,11 +1406,13 @@ function ResultsRoute({ session }) {
             onMouseLeave={(e) => (e.target.style.background = C.accent)}>
               Review
             </button>
-            <button onClick={() => navigate(`/quiz/${quizId}?q=1`)} style={{
-              flex: 1, background: "transparent", color: C.text,
-              border: `1.5px solid ${C.border}`, padding: "13px 16px", borderRadius: 12,
-              fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 48,
-            }}>Try Again</button>
+            {!isCloudView && (
+              <button onClick={() => navigate(`/quiz/${quizId}?q=1`)} style={{
+                flex: 1, background: "transparent", color: C.text,
+                border: `1.5px solid ${C.border}`, padding: "13px 16px", borderRadius: 12,
+                fontWeight: 600, fontSize: 15, cursor: "pointer", fontFamily: "'Figtree', sans-serif", minHeight: 48,
+              }}>Try Again</button>
+            )}
           </div>
         </div>
 
@@ -1435,19 +1461,21 @@ function ResultsRoute({ session }) {
                     {wasOverridden ? "✓ Overridden" : r.correct ? "✓ Correct" : "✗ Incorrect"}
                   </span>
                 </div>
-                <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: 16, color: C.text }}>
+                <p style={{ fontSize: 16, fontWeight: 500, lineHeight: 1.5, marginBottom: isCloudView ? 0 : 16, color: C.text }}>
                   {q.prompt.replace(/___+/g, "______")}
                 </p>
-                {wasOriginallyWrong && (
+                {!isCloudView && wasOriginallyWrong && (
                   <div style={{ marginBottom: 12, padding: "12px 16px", borderRadius: 12, background: wasOverridden ? C.successLight : C.errorLight }}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: wasOverridden ? C.success : C.error, marginBottom: 4 }}>Your answer:</p>
                     <div style={{ color: wasOverridden ? C.success : C.error }}>{renderUserAnswer(q, answers[i], i)}</div>
                   </div>
                 )}
-                <div style={{ padding: "12px 16px", borderRadius: 12, background: C.successLight }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
-                  <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
-                </div>
+                {!isCloudView && (
+                  <div style={{ padding: "12px 16px", borderRadius: 12, background: C.successLight }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: C.success, marginBottom: 4 }}>Correct answer:</p>
+                    <div style={{ color: C.success }}>{renderCorrectAnswer(q)}</div>
+                  </div>
+                )}
                 {q.explanation && (
                   <p style={{ fontSize: 13, color: C.muted, marginTop: 12, lineHeight: 1.5, fontStyle: "italic" }}>
                     💡 {q.explanation}
@@ -1562,6 +1590,7 @@ export default function App() {
         <Route path="/" element={<HomeRoute history={history} session={session} />} />
         <Route path="/quiz/:quizId" element={<QuizRoute saveAttempt={history.saveAttempt} session={session} />} />
         <Route path="/quiz/:quizId/results" element={<ResultsRoute session={session} />} />
+        <Route path="/history/view" element={<ResultsRoute session={session} />} />
         <Route path="/history" element={<Navigate to="/" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
