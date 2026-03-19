@@ -22,6 +22,38 @@ function pcm16ToFloat32(buffer) {
   return float32;
 }
 
+function writeString(view, offset, str) {
+  for (let i = 0; i < str.length; i++) {
+    view.setUint8(offset + i, str.charCodeAt(i));
+  }
+}
+
+function pcm16ToWav(pcmBuffer, sampleRate) {
+  const numChannels = 1;
+  const bytesPerSample = 2;
+  const pcmBytes = new Uint8Array(pcmBuffer);
+  const header = new ArrayBuffer(44);
+  const view = new DataView(header);
+
+  writeString(view, 0, "RIFF");
+  view.setUint32(4, 36 + pcmBytes.length, true);
+  writeString(view, 8, "WAVE");
+
+  writeString(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+  view.setUint16(32, numChannels * bytesPerSample, true);
+  view.setUint16(34, bytesPerSample * 8, true);
+
+  writeString(view, 36, "data");
+  view.setUint32(40, pcmBytes.length, true);
+
+  return new Blob([header, pcmBytes], { type: "audio/wav" });
+}
+
 export function useInstantMode() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -39,6 +71,8 @@ export function useInstantMode() {
   const activeSourcesRef = useRef([]);
   const connectingRef = useRef(false); // sync guard against rapid clicks
   const setupDoneRef = useRef(false);
+  const userAudioBufferRef = useRef([]);
+  const aiRespondingRef = useRef(false);
 
   const clearPlayback = () => {
     for (const s of activeSourcesRef.current) {
@@ -85,6 +119,8 @@ export function useInstantMode() {
     }
     connectingRef.current = false;
     setupDoneRef.current = false;
+    userAudioBufferRef.current = [];
+    aiRespondingRef.current = false;
     setIsConnecting(false);
     setIsSessionActive(false);
     setIsAISpeaking(false);
@@ -120,6 +156,43 @@ export function useInstantMode() {
     };
   };
 
+  const transcribeUserAudio = async (entryId) => {
+    const chunks = userAudioBufferRef.current;
+    userAudioBufferRef.current = [];
+
+    if (chunks.length === 0) return;
+
+    const totalLength = chunks.reduce((sum, c) => sum + c.length, 0);
+    const combined = new Int16Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    const wavBlob = pcm16ToWav(combined.buffer, 16000);
+
+    try {
+      const res = await fetch("/api/stt", {
+        method: "POST",
+        headers: { "Content-Type": "audio/wav" },
+        body: wavBlob,
+      });
+      const data = await res.json();
+      const text = data.text?.trim();
+      setTranscript((prev) =>
+        text
+          ? prev.map((e) =>
+              e.id === entryId ? { ...e, text, done: true } : e
+            )
+          : prev.filter((e) => e.id !== entryId)
+      );
+    } catch (err) {
+      console.error("[Deepgram] Transcription failed:", err);
+      setTranscript((prev) => prev.filter((e) => e.id !== entryId));
+    }
+  };
+
   const handleMessage = (data) => {
     let msg;
     try {
@@ -133,15 +206,18 @@ export function useInstantMode() {
         msg.serverContent;
 
       if (modelTurn?.parts) {
+        // Only transcribe once per AI turn (modelTurn fires on every audio chunk)
+        if (!aiRespondingRef.current && userAudioBufferRef.current.length > 0) {
+          const entryId = Date.now() + Math.random();
+          setTranscript((prev) => [
+            ...prev,
+            { role: "user", text: "...", id: entryId },
+          ]);
+          transcribeUserAudio(entryId);
+        }
+        aiRespondingRef.current = true;
+
         setIsAISpeaking(true);
-        // Close any open user bubble when model starts speaking
-        setTranscript((prev) => {
-          const last = prev[prev.length - 1];
-          if (last && last.role === "user" && !last.done) {
-            return [...prev.slice(0, -1), { ...last, done: true }];
-          }
-          return prev;
-        });
         for (const part of modelTurn.parts) {
           if (part.inlineData?.data) {
             playPCMChunk(part.inlineData.data, part.inlineData.mimeType);
@@ -177,27 +253,15 @@ export function useInstantMode() {
 
       if (turnComplete) {
         setIsAISpeaking(false);
+        aiRespondingRef.current = false;
       }
 
       if (interrupted) {
         setIsAISpeaking(false);
+        aiRespondingRef.current = false;
         clearPlayback();
       }
 
-      // User speech transcription
-      const inputText = msg.serverContent.inputTranscription?.text;
-      if (inputText) {
-        setTranscript((prev) => {
-          const last = prev[prev.length - 1];
-          if (last && last.role === "user" && !last.done) {
-            return [
-              ...prev.slice(0, -1),
-              { ...last, text: last.text + inputText },
-            ];
-          }
-          return [...prev, { role: "user", text: inputText }];
-        });
-      }
     }
   };
 
@@ -211,6 +275,11 @@ export function useInstantMode() {
     nodesRef.current.push(silentGain);
 
     const sendPCM = (buffer) => {
+      // Only buffer for transcription while user is speaking (not during AI response)
+      if (!aiRespondingRef.current) {
+        userAudioBufferRef.current.push(new Int16Array(buffer).slice());
+      }
+
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(
           JSON.stringify({
@@ -277,6 +346,8 @@ export function useInstantMode() {
     setTranscript([]);
     setSessionDuration(0);
     setIsAISpeaking(false);
+    userAudioBufferRef.current = [];
+    aiRespondingRef.current = false;
     try {
       const configRes = await fetch("/api/gemini-session", {
         method: "POST",
@@ -328,7 +399,6 @@ export function useInstantMode() {
               systemInstruction: {
                 parts: [{ text: config.systemInstruction }],
               },
-              inputAudioTranscription: {},
               outputAudioTranscription: {},
             },
           })
