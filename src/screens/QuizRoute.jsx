@@ -221,7 +221,8 @@ export default function QuizRoute({ saveAttempt, session }) {
         position: "sticky", top: 0, zIndex: 10, background: C.bg,
         padding: "16px 20px 12px",
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+        {/* Mobile: hamburger + Home */}
+        <div className="quiz-home-btn" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <button onClick={handleHomeClick} style={{
             background: "none", border: "none", color: C.muted, fontSize: 14, fontWeight: 700,
             cursor: "pointer", padding: "8px 4px", fontFamily: "'Nunito', sans-serif",
@@ -234,6 +235,29 @@ export default function QuizRoute({ saveAttempt, session }) {
             </svg>
             Home
           </button>
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: "4px 10px",
+            borderRadius: 8, background: tc.bg, color: tc.text,
+          }}>{typeLabels[q.type] || q.type}</span>
+        </div>
+
+        {/* Desktop: back arrow + quiz title + type badge */}
+        <div className="quiz-desktop-header" style={{ display: "none", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          <button onClick={handleHomeClick} style={{
+            background: "none", border: `1.5px solid ${C.border}`, borderRadius: 10,
+            color: C.muted, cursor: "pointer", padding: "6px 8px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = C.accent; e.currentTarget.style.borderColor = C.accent; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <span style={{ fontSize: 15, fontWeight: 800, color: C.text, flex: 1 }}>
+            {data.meta?.title || "Quiz"}
+          </span>
           <span style={{
             fontSize: 11, fontWeight: 700, padding: "4px 10px",
             borderRadius: 8, background: tc.bg, color: tc.text,

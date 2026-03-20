@@ -65,6 +65,8 @@ export const injectStyles = () => {
       .desktop-in-progress-pill { display: inline-block !important; }
       .add-quiz-btn-mobile { display: none !important; }
       .add-quiz-btn-desktop { display: flex !important; }
+      .quiz-home-btn { display: none !important; }
+      .quiz-desktop-header { display: flex !important; }
     }
     @media (min-width: 1400px) {
       .app-container { padding-left: 60px !important; padding-right: 60px !important; }

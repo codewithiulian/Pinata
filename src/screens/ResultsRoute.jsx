@@ -157,7 +157,8 @@ export default function ResultsRoute({ session }) {
         padding: "0 20px", borderBottom: `1px solid ${C.border}`,
       }}>
         <div className="app-header-inner">
-          <button onClick={() => navigate("/")} style={{
+          {/* Mobile: back arrow + Home */}
+          <button className="quiz-home-btn" onClick={() => navigate("/")} style={{
             background: "none", border: "none", color: C.muted, fontSize: 14, fontWeight: 700,
             cursor: "pointer", padding: "12px 4px", fontFamily: "'Nunito', sans-serif",
             display: "flex", alignItems: "center", gap: 4, minHeight: 44,
@@ -169,6 +170,25 @@ export default function ResultsRoute({ session }) {
             </svg>
             Home
           </button>
+
+          {/* Desktop: back arrow + quiz title */}
+          <div className="quiz-desktop-header" style={{ display: "none", alignItems: "center", gap: 12, padding: "8px 0" }}>
+            <button onClick={() => navigate("/")} style={{
+              background: "none", border: `1.5px solid ${C.border}`, borderRadius: 10,
+              color: C.muted, cursor: "pointer", padding: "6px 8px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = C.accent; e.currentTarget.style.borderColor = C.accent; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>
+              {attempt?.meta?.title || cloudRecord?.lesson_title || "Results"}
+            </span>
+          </div>
         </div>
       </div>
 
