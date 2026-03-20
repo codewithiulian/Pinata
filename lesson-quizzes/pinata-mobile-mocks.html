@@ -1,0 +1,1603 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piñata Mobile Mocks — Quiz in Lessons</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --mint: #43c6ac;
+        --mint-light: #e8f8f5;
+        --mint-pale: #f0fbf8;
+        --mint-border: #b2e8dc;
+        --mint-dark: #2ba88c;
+        --pink: #f87171;
+        --pink-light: #fee2e2;
+        --coral: #ff6b6b;
+        --white: #ffffff;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --amber: #f59e0b;
+        --amber-light: #fef3c7;
+        --purple: #8b5cf6;
+        --purple-light: #ede9fe;
+        --blue: #3b82f6;
+        --blue-light: #dbeafe;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+        --radius: 12px;
+        --radius-lg: 16px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Nunito", sans-serif;
+        background: #f1f5f9;
+        color: var(--gray-800);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .mock-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px;
+      }
+
+      .mock-header {
+        text-align: center;
+        margin-bottom: 36px;
+      }
+
+      .mock-header h1 {
+        font-size: 26px;
+        font-weight: 800;
+      }
+      .mock-header p {
+        color: var(--gray-500);
+        font-size: 14px;
+        margin-top: 4px;
+      }
+
+      /* Phone frames grid */
+      .phones-row {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-bottom: 40px;
+      }
+
+      .phone-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .phone-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: var(--mint-dark);
+        text-align: center;
+      }
+
+      .phone-sublabel {
+        font-size: 11px;
+        color: var(--gray-400);
+        text-align: center;
+        max-width: 280px;
+      }
+
+      /* Phone Frame */
+      .phone {
+        width: 375px;
+        height: 812px;
+        background: var(--white);
+        border-radius: 40px;
+        box-shadow:
+          0 20px 60px rgba(0, 0, 0, 0.15),
+          0 0 0 1px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Status bar */
+      .status-bar {
+        height: 50px;
+        background: var(--mint-pale);
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 6px;
+        flex-shrink: 0;
+      }
+
+      .notch {
+        width: 160px;
+        height: 28px;
+        background: var(--gray-800);
+        border-radius: 0 0 20px 20px;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* Tab bar */
+      .tab-bar {
+        display: flex;
+        background: var(--white);
+        border-top: 1px solid var(--gray-100);
+        padding: 6px 0 28px;
+        flex-shrink: 0;
+      }
+
+      .tab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 8px 4px 4px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--gray-400);
+        cursor: pointer;
+      }
+
+      .tab.active {
+        color: var(--mint-dark);
+      }
+      .tab svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      /* Scrollable content */
+      .phone-content {
+        flex: 1;
+        overflow-y: auto;
+        background: var(--mint-pale);
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .phone-content::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* ===== Mobile Screen Styles ===== */
+
+      .m-header {
+        padding: 16px 20px 12px;
+        background: var(--mint-pale);
+      }
+
+      .m-header h1 {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+      .m-header .subtitle {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .m-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* Stats pills */
+      .m-stats {
+        display: flex;
+        gap: 8px;
+        padding: 0 20px 12px;
+        background: var(--mint-pale);
+      }
+
+      .m-stat-pill {
+        padding: 4px 12px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .m-stat-pill.avg {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+      .m-stat-pill.best {
+        background: var(--amber-light);
+        color: var(--amber);
+      }
+      .m-stat-pill.count {
+        background: var(--gray-100);
+        color: var(--gray-500);
+      }
+
+      /* Tab switcher */
+      .m-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 0 20px 16px;
+        background: var(--mint-pale);
+      }
+
+      .m-tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-400);
+        background: var(--white);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1.5px solid transparent;
+      }
+
+      .m-tab.active {
+        color: var(--mint-dark);
+        background: var(--white);
+        border-color: var(--mint);
+        box-shadow: 0 2px 8px rgba(67, 198, 172, 0.15);
+      }
+
+      /* Mobile Search */
+      .m-search {
+        margin: 0 20px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--white);
+        border: 1.5px solid var(--gray-200);
+        border-radius: 10px;
+        padding: 10px 14px;
+      }
+
+      .m-search input {
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 14px;
+        flex: 1;
+        color: var(--gray-700);
+        background: transparent;
+      }
+
+      .m-search input::placeholder {
+        color: var(--gray-300);
+      }
+      .m-search svg {
+        width: 18px;
+        color: var(--gray-300);
+        flex-shrink: 0;
+      }
+
+      /* Mobile Unit Card */
+      .m-unit {
+        margin: 0 16px 12px;
+        background: var(--white);
+        border: 1.5px solid var(--mint-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      .m-unit-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+      }
+
+      .m-unit-num {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        background: var(--mint);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 15px;
+        flex-shrink: 0;
+      }
+
+      .m-unit-info {
+        flex: 1;
+      }
+      .m-unit-info .title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--gray-800);
+      }
+      .m-unit-info .meta {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .m-chevron {
+        color: var(--gray-300);
+        font-size: 18px;
+      }
+
+      .m-unit-body {
+        padding: 0 12px 12px;
+      }
+
+      .m-divider {
+        height: 1px;
+        background: var(--gray-100);
+        margin: 0 4px 8px;
+      }
+
+      /* Mobile Lesson Row */
+      .m-lesson {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .m-lesson:active {
+        background: var(--mint-pale);
+      }
+
+      .m-lesson-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: var(--gray-50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      .m-lesson-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .m-lesson-info .title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .m-lesson-info .desc {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .m-lesson-badges {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 100px;
+      }
+
+      .m-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .m-badge-pdf {
+        background: var(--pink-light);
+        color: var(--coral);
+      }
+      .m-badge-quiz {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .m-lesson-arrow {
+        color: var(--gray-300);
+        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      .m-add-row {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        padding: 10px 0 4px;
+        border-top: 1px dashed var(--gray-200);
+        margin: 4px 8px 0;
+      }
+
+      .m-add-btn {
+        font-family: "Nunito", sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--mint-dark);
+        background: none;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .m-add-btn.quiz {
+        color: var(--purple);
+      }
+
+      /* Helper text at bottom */
+      .m-helper {
+        text-align: center;
+        padding: 12px 20px;
+        font-size: 11px;
+        color: var(--gray-400);
+      }
+
+      /* FAB */
+      .fab {
+        position: absolute;
+        bottom: 100px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--mint);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        box-shadow: 0 4px 14px rgba(67, 198, 172, 0.4);
+        cursor: pointer;
+      }
+
+      /* ===== Mobile Quiz Card ===== */
+      .m-quiz-card {
+        margin: 0 16px 12px;
+        background: var(--white);
+        border: 1.5px solid var(--mint-border);
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        position: relative;
+        cursor: pointer;
+        transition: box-shadow 0.15s;
+      }
+
+      .m-quiz-card:active {
+        box-shadow: var(--shadow-md);
+      }
+
+      .m-quiz-status {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .m-status-progress {
+        background: var(--mint);
+        color: white;
+      }
+      .m-status-new {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+      .m-status-unit {
+        background: var(--blue-light);
+        color: var(--blue);
+      }
+
+      .m-quiz-card .title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .m-quiz-card .source {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-bottom: 10px;
+      }
+
+      .m-quiz-card .source span {
+        font-weight: 600;
+      }
+      .m-quiz-card .source .lesson-tag {
+        color: var(--purple);
+      }
+      .m-quiz-card .source .unit-tag {
+        color: var(--blue);
+      }
+
+      .m-quiz-stats {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .m-quiz-stats .stat {
+        font-size: 11px;
+        color: var(--gray-500);
+      }
+
+      .m-quiz-stats .stat strong {
+        color: var(--gray-700);
+      }
+
+      .m-quiz-progress {
+        width: 100%;
+        height: 6px;
+        background: var(--gray-100);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+
+      .m-quiz-progress .fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--mint), var(--mint-dark));
+      }
+
+      .m-btn-continue {
+        font-family: "Nunito", sans-serif;
+        width: 100%;
+        padding: 12px;
+        border: 1.5px solid var(--gray-200);
+        background: var(--white);
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        cursor: pointer;
+        text-align: center;
+      }
+
+      /* Mobile filter chips */
+      .m-filters {
+        display: flex;
+        gap: 6px;
+        padding: 0 16px 12px;
+        overflow-x: auto;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .m-filters::-webkit-scrollbar {
+        display: none;
+      }
+
+      .m-filter {
+        padding: 6px 14px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gray-500);
+        white-space: nowrap;
+        flex-shrink: 0;
+        background: var(--white);
+      }
+
+      .m-filter.active {
+        background: var(--purple);
+        border-color: var(--purple);
+        color: white;
+      }
+
+      /* ===== Mobile Lesson Detail ===== */
+      .m-detail-header {
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--white);
+        border-bottom: 1px solid var(--gray-100);
+      }
+
+      .m-back {
+        color: var(--mint-dark);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .m-detail-content {
+        padding: 20px;
+      }
+
+      .m-detail-content h1 {
+        font-size: 22px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .m-detail-meta {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-bottom: 16px;
+      }
+
+      /* PDF Card mobile */
+      .m-pdf-card {
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 14px;
+        margin-bottom: 16px;
+      }
+
+      .m-pdf-card .label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-600);
+        margin-bottom: 10px;
+      }
+
+      .m-pdf-file {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .m-pdf-icon {
+        width: 36px;
+        height: 36px;
+        background: var(--pink-light);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--coral);
+        font-size: 11px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .m-pdf-info {
+        flex: 1;
+      }
+      .m-pdf-info .name {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .m-pdf-info .size {
+        font-size: 11px;
+        color: var(--mint-dark);
+        font-weight: 600;
+      }
+
+      .m-btn-view-pdf {
+        font-family: "Nunito", sans-serif;
+        width: 100%;
+        padding: 12px;
+        background: var(--mint);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      /* Quiz section in lesson detail */
+      .m-quiz-section {
+        margin-bottom: 20px;
+      }
+
+      .m-quiz-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .m-quiz-section-header h3 {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--gray-700);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .m-quiz-section-header .count {
+        font-size: 11px;
+        color: var(--gray-400);
+        font-weight: 600;
+      }
+
+      .m-quiz-mini {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        background: var(--white);
+        border: 1.5px solid var(--gray-200);
+        border-radius: 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: border-color 0.15s;
+      }
+
+      .m-quiz-mini:active {
+        border-color: var(--purple);
+      }
+
+      .m-quiz-mini-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--purple-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .m-quiz-mini-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .m-quiz-mini-info .title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+      .m-quiz-mini-info .meta {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .m-quiz-mini-score {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--mint-dark);
+        flex-shrink: 0;
+      }
+
+      .m-quiz-mini-score.na {
+        color: var(--gray-300);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .m-quiz-mini-arrow {
+        color: var(--gray-300);
+        flex-shrink: 0;
+      }
+
+      .m-add-quiz-btn {
+        font-family: "Nunito", sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 12px;
+        border: 1.5px dashed var(--purple);
+        background: transparent;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--purple);
+        cursor: pointer;
+        margin-top: 4px;
+      }
+
+      /* Lesson content in mobile */
+      .m-markdown h2 {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin: 20px 0 8px;
+      }
+
+      .m-markdown h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--mint-dark);
+        margin: 16px 0 6px;
+      }
+
+      .m-markdown table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 8px 0;
+        font-size: 13px;
+      }
+
+      .m-markdown th {
+        text-align: left;
+        font-weight: 700;
+        color: var(--gray-500);
+        font-size: 12px;
+        padding: 6px 10px;
+        border-bottom: 2px solid var(--mint);
+      }
+
+      .m-markdown td {
+        padding: 6px 10px;
+        border-bottom: 1px solid var(--gray-100);
+        color: var(--gray-700);
+      }
+
+      /* Annotation */
+      .annotation-mobile {
+        background: var(--amber-light);
+        border-left: 3px solid var(--amber);
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        margin: 16px 0;
+        font-size: 12px;
+        color: var(--gray-600);
+        line-height: 1.5;
+      }
+
+      .annotation-mobile strong {
+        color: var(--gray-800);
+      }
+
+      /* Bottom sheet preview */
+      .m-bottom-sheet {
+        position: absolute;
+        bottom: 70px;
+        left: 0;
+        right: 0;
+        background: var(--white);
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.12);
+        padding: 20px;
+        z-index: 10;
+      }
+
+      .m-sheet-handle {
+        width: 40px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--gray-200);
+        margin: 0 auto 16px;
+      }
+
+      .m-sheet-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .m-sheet-desc {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-bottom: 16px;
+      }
+
+      .m-method-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .m-method {
+        border: 2px solid var(--gray-200);
+        border-radius: 12px;
+        padding: 16px 12px;
+        text-align: center;
+        cursor: pointer;
+      }
+
+      .m-method.selected {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+
+      .m-method .icon {
+        font-size: 24px;
+        margin-bottom: 6px;
+      }
+      .m-method .label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+      .m-method .desc {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .m-btn-purple {
+        font-family: "Nunito", sans-serif;
+        width: 100%;
+        padding: 14px;
+        background: var(--purple);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+      }
+
+      .m-sheet-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 40px;
+        z-index: 5;
+      }
+
+      /* Section title */
+      .section-title {
+        text-align: center;
+        margin: 40px 0 24px;
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--gray-800);
+        position: relative;
+      }
+
+      .section-title::after {
+        content: "";
+        display: block;
+        width: 60px;
+        height: 3px;
+        background: var(--mint);
+        border-radius: 2px;
+        margin: 8px auto 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mock-container">
+      <div class="mock-header">
+        <h1>🪅 Piñata — Mobile Mockups</h1>
+        <p>Quiz-in-Lessons Feature &middot; March 2026</p>
+      </div>
+
+      <!-- ROW 1: Lessons + Quizzes list -->
+      <h2 class="section-title">Lessons & Quizzes List Views</h2>
+      <div class="phones-row">
+        <!-- Phone 1: Lessons with quiz badges -->
+        <div class="phone-wrapper">
+          <div class="phone-label">① Lessons Page</div>
+          <div class="phone-sublabel">
+            Quiz count badges per lesson, unit quiz action
+          </div>
+          <div class="phone">
+            <div class="status-bar"><div class="notch"></div></div>
+            <div class="phone-content">
+              <div class="m-header">
+                <div class="m-header-row">
+                  <div>
+                    <h1>Hola, Iulian</h1>
+                    <div class="subtitle">Ready to practice?</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="m-tabs">
+                <div class="m-tab">Quizzes</div>
+                <div class="m-tab active">Lessons</div>
+                <div class="m-tab">History</div>
+                <div class="m-tab">Hablar</div>
+              </div>
+
+              <div class="m-search">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input type="text" placeholder="Search all lessons..." />
+              </div>
+
+              <div class="m-unit">
+                <div class="m-unit-header">
+                  <div class="m-unit-num">1</div>
+                  <div class="m-unit-info">
+                    <div class="title">Unit #1: Spanish Introductions</div>
+                    <div class="meta">3 lessons · 4 quizzes</div>
+                  </div>
+                  <span class="m-chevron">▾</span>
+                </div>
+                <div class="m-divider"></div>
+                <div class="m-unit-body">
+                  <div class="m-lesson">
+                    <div class="m-lesson-icon">📄</div>
+                    <div class="m-lesson-info">
+                      <div class="title">Lesson #1: Learn the Greetings...</div>
+                      <div class="desc">From Zero to Spanish Hero 2.0</div>
+                    </div>
+                    <div class="m-lesson-badges">
+                      <span class="m-badge m-badge-pdf">PDF ✓</span>
+                      <span class="m-badge m-badge-quiz">🧩 2</span>
+                    </div>
+                    <span class="m-lesson-arrow">›</span>
+                  </div>
+
+                  <div class="m-lesson">
+                    <div class="m-lesson-icon">📄</div>
+                    <div class="m-lesson-info">
+                      <div class="title">Lesson #2: Presentaciones...</div>
+                      <div class="desc">Introducing yourself</div>
+                    </div>
+                    <div class="m-lesson-badges">
+                      <span class="m-badge m-badge-pdf">PDF ✓</span>
+                      <span class="m-badge m-badge-quiz">🧩 1</span>
+                    </div>
+                    <span class="m-lesson-arrow">›</span>
+                  </div>
+
+                  <div class="m-lesson">
+                    <div class="m-lesson-icon">📄</div>
+                    <div class="m-lesson-info">
+                      <div class="title">Lesson #3: Verbos Básicos</div>
+                      <div class="desc">Ser, estar, tener, ir</div>
+                    </div>
+                    <div class="m-lesson-badges">
+                      <span class="m-badge m-badge-pdf">PDF ✓</span>
+                    </div>
+                    <span class="m-lesson-arrow">›</span>
+                  </div>
+
+                  <div class="m-add-row">
+                    <button class="m-add-btn">+ Lesson</button>
+                    <button class="m-add-btn quiz">+ Unit quiz</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="m-helper">
+                All weeks collapsed · tap to expand · FAB adds new week
+              </div>
+            </div>
+
+            <div class="fab">+</div>
+
+            <div class="tab-bar">
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" /></svg
+                >Quizzes
+              </div>
+              <div class="tab active">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                  /></svg
+                >Lessons
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" /></svg
+                >History
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                  />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" /></svg
+                >Hablar
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone 2: Quizzes filtered view -->
+        <div class="phone-wrapper">
+          <div class="phone-label">② Quizzes Page</div>
+          <div class="phone-sublabel">
+            Filterable by unit/lesson, shows parent context
+          </div>
+          <div class="phone">
+            <div class="status-bar"><div class="notch"></div></div>
+            <div class="phone-content">
+              <div class="m-header">
+                <div class="m-header-row">
+                  <div>
+                    <h1>Quizzes</h1>
+                    <div class="subtitle">Ready to practice?</div>
+                  </div>
+                  <span
+                    style="
+                      font-size: 20px;
+                      color: var(--gray-400);
+                      cursor: pointer;
+                    "
+                    >→</span
+                  >
+                </div>
+              </div>
+
+              <div class="m-stats">
+                <span class="m-stat-pill avg">Avg: 58%</span>
+                <span class="m-stat-pill best">Best: 87%</span>
+                <span class="m-stat-pill count">4 quizzes</span>
+              </div>
+
+              <div class="m-filters">
+                <span class="m-filter active">All</span>
+                <span class="m-filter">Unit 1</span>
+                <span class="m-filter">Lesson 1</span>
+                <span class="m-filter">Lesson 2</span>
+                <span class="m-filter">Lesson 3</span>
+              </div>
+
+              <!-- Quiz cards -->
+              <div class="m-quiz-card">
+                <span class="m-quiz-status m-status-progress">In progress</span>
+                <div class="title">Saludos y presentaciones</div>
+                <div class="source">
+                  <span class="lesson-tag">📖 Lesson 1</span> · 15 questions
+                </div>
+                <div class="m-quiz-stats">
+                  <div class="stat">Best: <strong>87%</strong></div>
+                  <div class="stat">Avg: <strong>72%</strong></div>
+                  <div class="stat">×3</div>
+                </div>
+                <div class="m-quiz-progress">
+                  <div class="fill" style="width: 60%"></div>
+                </div>
+                <button class="m-btn-continue">Continue →</button>
+              </div>
+
+              <div class="m-quiz-card">
+                <span class="m-quiz-status m-status-new">New</span>
+                <div class="title">Cognates & Vocabulary</div>
+                <div class="source">
+                  <span class="lesson-tag">📖 Lesson 1</span> · 10 questions
+                </div>
+                <div class="m-quiz-stats">
+                  <div class="stat">Best: <strong>—</strong></div>
+                  <div class="stat">Avg: <strong>—</strong></div>
+                </div>
+                <div class="m-quiz-progress">
+                  <div class="fill" style="width: 0%"></div>
+                </div>
+                <button class="m-btn-continue">Start →</button>
+              </div>
+
+              <div class="m-quiz-card">
+                <span class="m-quiz-status m-status-progress">In progress</span>
+                <div class="title">Presentaciones Personales</div>
+                <div class="source">
+                  <span class="lesson-tag">📖 Lesson 2</span> · 15 questions
+                </div>
+                <div class="m-quiz-stats">
+                  <div class="stat">Best: <strong>53%</strong></div>
+                  <div class="stat">Avg: <strong>40%</strong></div>
+                  <div class="stat">×2</div>
+                </div>
+                <div class="m-quiz-progress">
+                  <div class="fill" style="width: 33%"></div>
+                </div>
+                <button class="m-btn-continue">Continue →</button>
+              </div>
+
+              <div class="m-quiz-card">
+                <span class="m-quiz-status m-status-unit">Unit Quiz</span>
+                <div class="title">Unit 1 Review: All Topics</div>
+                <div class="source">
+                  <span class="unit-tag">📁 Unit 1</span> · 25 questions
+                </div>
+                <div class="m-quiz-stats">
+                  <div class="stat">Best: <strong>—</strong></div>
+                </div>
+                <div class="m-quiz-progress">
+                  <div class="fill" style="width: 0%"></div>
+                </div>
+                <button class="m-btn-continue">Start →</button>
+              </div>
+            </div>
+
+            <div class="tab-bar">
+              <div class="tab active">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" /></svg
+                >Quizzes
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                  /></svg
+                >Lessons
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" /></svg
+                >History
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                  />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" /></svg
+                >Hablar
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Lesson Detail + Add Quiz Sheet -->
+      <h2 class="section-title">Lesson Detail & Add Quiz Flow</h2>
+      <div class="phones-row">
+        <!-- Phone 3: Lesson detail with quizzes -->
+        <div class="phone-wrapper">
+          <div class="phone-label">③ Lesson Detail</div>
+          <div class="phone-sublabel">
+            Quiz section integrated above lesson content
+          </div>
+          <div class="phone">
+            <div class="status-bar"><div class="notch"></div></div>
+            <div class="phone-content" style="background: var(--white)">
+              <div class="m-detail-header">
+                <span class="m-back">‹ Back to lessons</span>
+              </div>
+
+              <div class="m-detail-content">
+                <h1>Lesson #1: Learn the Greetings Natives Use Daily</h1>
+                <div class="m-detail-meta">
+                  Week 1 · Unit #1: Spanish Introductions
+                </div>
+
+                <!-- PDF Card -->
+                <div class="m-pdf-card">
+                  <div class="label">Course PDF</div>
+                  <div class="m-pdf-file">
+                    <div class="m-pdf-icon">PDF</div>
+                    <div class="m-pdf-info">
+                      <div class="name">Leccion_2_Libro_de_Texto...</div>
+                      <div class="size">8.4 MB · Available offline</div>
+                    </div>
+                  </div>
+                  <button class="m-btn-view-pdf">👁 View PDF</button>
+                </div>
+
+                <!-- Quiz Section -->
+                <div class="m-quiz-section">
+                  <div class="m-quiz-section-header">
+                    <h3>🧩 Quizzes</h3>
+                    <span class="count">2 quizzes</span>
+                  </div>
+
+                  <div class="m-quiz-mini">
+                    <div class="m-quiz-mini-icon">📝</div>
+                    <div class="m-quiz-mini-info">
+                      <div class="title">Saludos y presentaciones</div>
+                      <div class="meta">15 questions · Best: 87%</div>
+                    </div>
+                    <div class="m-quiz-mini-score">87%</div>
+                    <span class="m-quiz-mini-arrow">›</span>
+                  </div>
+
+                  <div class="m-quiz-mini">
+                    <div class="m-quiz-mini-icon">📝</div>
+                    <div class="m-quiz-mini-info">
+                      <div class="title">Cognates & Vocabulary</div>
+                      <div class="meta">10 questions · Not started</div>
+                    </div>
+                    <div class="m-quiz-mini-score na">—</div>
+                    <span class="m-quiz-mini-arrow">›</span>
+                  </div>
+
+                  <button class="m-add-quiz-btn">+ Add quiz</button>
+                </div>
+
+                <!-- Lesson content preview -->
+                <div class="m-markdown">
+                  <h2>From Zero to Spanish Hero 2.0 — Nivel A1</h2>
+                  <h3>1. Recognizable Spanish Words</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Spanish</th>
+                        <th>English</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Aeropuerto</td>
+                        <td>Airport</td>
+                      </tr>
+                      <tr>
+                        <td>Menú</td>
+                        <td>Menu</td>
+                      </tr>
+                      <tr>
+                        <td>Avenida</td>
+                        <td>Avenue</td>
+                      </tr>
+                      <tr>
+                        <td>Escuela</td>
+                        <td>School</td>
+                      </tr>
+                      <tr>
+                        <td>Hola</td>
+                        <td>Hello</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-bar">
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" /></svg
+                >Quizzes
+              </div>
+              <div class="tab active">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                  /></svg
+                >Lessons
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" /></svg
+                >History
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                  />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" /></svg
+                >Hablar
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone 4: Add Quiz bottom sheet -->
+        <div class="phone-wrapper">
+          <div class="phone-label">④ Add Quiz (Bottom Sheet)</div>
+          <div class="phone-sublabel">
+            Upload JSON or generate — native mobile pattern
+          </div>
+          <div class="phone">
+            <div class="status-bar"><div class="notch"></div></div>
+            <div class="phone-content" style="background: var(--white)">
+              <div class="m-detail-header">
+                <span class="m-back">‹ Back to lessons</span>
+              </div>
+              <div class="m-detail-content" style="opacity: 0.3">
+                <h1>Lesson #1: Learn the Greetings...</h1>
+                <div class="m-detail-meta">Week 1 · Unit #1</div>
+              </div>
+
+              <div class="m-sheet-overlay"></div>
+
+              <div class="m-bottom-sheet">
+                <div class="m-sheet-handle"></div>
+                <div class="m-sheet-title">Add a Quiz</div>
+                <div class="m-sheet-desc">Attach to Lesson #1: Greetings</div>
+
+                <div class="m-method-grid">
+                  <div class="m-method selected">
+                    <div class="icon">📤</div>
+                    <div class="label">Upload JSON</div>
+                    <div class="desc">Import a prepared file</div>
+                  </div>
+                  <div class="m-method">
+                    <div class="icon">✨</div>
+                    <div class="label">Generate with AI</div>
+                    <div class="desc">From lesson content</div>
+                  </div>
+                </div>
+
+                <button class="m-btn-purple">Choose File & Upload</button>
+              </div>
+            </div>
+
+            <div class="tab-bar" style="opacity: 0.3">
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" /></svg
+                >Quizzes
+              </div>
+              <div class="tab active">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                  /></svg
+                >Lessons
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" /></svg
+                >History
+              </div>
+              <div class="tab">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                  />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" /></svg
+                >Hablar
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="annotation-mobile"
+        style="max-width: 800px; margin: 0 auto 40px"
+      >
+        <strong>✨ Mobile Design Notes:</strong> On mobile, the "Add Quiz" flow
+        uses a native bottom sheet pattern (not a modal) — feels more natural on
+        iOS. The lesson detail places quizzes prominently between the PDF card
+        and lesson content, making them the first actionable item users see.
+        Quiz cards in the list view show their parent lesson/unit with color
+        coding. Filter chips are horizontally scrollable for easy one-thumb
+        filtering.
+      </div>
+    </div>
+  </body>
+</html>

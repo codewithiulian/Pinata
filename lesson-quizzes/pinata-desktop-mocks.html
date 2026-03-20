@@ -1,0 +1,4542 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piñata Desktop Mocks — Quiz in Lessons</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --mint: #43c6ac;
+        --mint-light: #e8f8f5;
+        --mint-pale: #f0fbf8;
+        --mint-border: #b2e8dc;
+        --mint-dark: #2ba88c;
+        --pink: #f87171;
+        --pink-light: #fee2e2;
+        --coral: #ff6b6b;
+        --white: #ffffff;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --amber: #f59e0b;
+        --amber-light: #fef3c7;
+        --purple: #8b5cf6;
+        --purple-light: #ede9fe;
+        --blue: #3b82f6;
+        --blue-light: #dbeafe;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+        --radius: 12px;
+        --radius-lg: 16px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Nunito", sans-serif;
+        background: var(--gray-50);
+        color: var(--gray-800);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Mock Frame */
+      .mock-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px;
+      }
+
+      .mock-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .mock-header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .mock-header p {
+        color: var(--gray-500);
+        font-size: 15px;
+      }
+
+      .screen-nav {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+      }
+
+      .screen-nav button {
+        font-family: "Nunito", sans-serif;
+        padding: 10px 20px;
+        border: 2px solid var(--gray-200);
+        background: var(--white);
+        border-radius: 100px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .screen-nav button:hover {
+        border-color: var(--mint);
+        color: var(--mint-dark);
+      }
+
+      .screen-nav button.active {
+        background: var(--mint);
+        border-color: var(--mint);
+        color: white;
+      }
+
+      .screen {
+        display: none;
+      }
+      .screen.active {
+        display: block;
+      }
+
+      .screen-label {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--mint-dark);
+      }
+
+      /* App Shell */
+      .app-shell {
+        display: flex;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        min-height: 680px;
+        border: 1px solid var(--gray-100);
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 210px;
+        background: var(--white);
+        border-right: 1px solid var(--gray-100);
+        padding: 20px 0;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+
+      .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 20px 24px;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .sidebar-logo .emoji {
+        font-size: 24px;
+      }
+
+      .sidebar-section {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: var(--gray-400);
+        padding: 0 20px;
+        margin: 16px 0 8px;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+
+      .sidebar-item:hover {
+        color: var(--gray-700);
+        background: var(--gray-50);
+      }
+
+      .sidebar-item.active {
+        color: var(--mint-dark);
+        background: var(--mint-light);
+      }
+
+      .sidebar-item.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 3px;
+        background: var(--mint);
+        border-radius: 0 3px 3px 0;
+      }
+
+      .sidebar-item svg {
+        width: 18px;
+        height: 18px;
+        opacity: 0.7;
+      }
+      .sidebar-item.active svg {
+        opacity: 1;
+      }
+
+      .sidebar-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-weight: 700;
+        margin-left: auto;
+      }
+
+      .badge-beta {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+      .badge-soon {
+        background: var(--gray-100);
+        color: var(--gray-400);
+      }
+
+      .sidebar-bottom {
+        margin-top: auto;
+        border-top: 1px solid var(--gray-100);
+        padding-top: 12px;
+      }
+
+      .sidebar-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+      }
+
+      .sidebar-user .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--mint);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .sidebar-user .info {
+        font-size: 13px;
+      }
+      .sidebar-user .info .name {
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+      .sidebar-user .info .meta {
+        font-size: 11px;
+        color: var(--gray-400);
+      }
+
+      /* Main Content */
+      .main {
+        flex: 1;
+        padding: 28px 36px;
+        overflow-y: auto;
+        background: var(--gray-50);
+      }
+
+      .main-header {
+        margin-bottom: 24px;
+      }
+
+      .main-header h1 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .main-header .subtitle {
+        font-size: 14px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .main-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* Search Bar */
+      .search-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--white);
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 10px 16px;
+        margin-bottom: 20px;
+        transition: border-color 0.2s;
+      }
+
+      .search-bar:focus-within {
+        border-color: var(--mint);
+      }
+      .search-bar input {
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 14px;
+        flex: 1;
+        color: var(--gray-700);
+      }
+      .search-bar input::placeholder {
+        color: var(--gray-300);
+      }
+      .search-bar svg {
+        color: var(--gray-300);
+        width: 18px;
+      }
+
+      /* Unit Card */
+      .unit-card {
+        background: var(--white);
+        border: 1.5px solid var(--mint-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .unit-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 20px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .unit-header:hover {
+        background: var(--mint-pale);
+      }
+
+      .unit-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--mint);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .unit-info {
+        flex: 1;
+      }
+      .unit-info .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--gray-800);
+      }
+      .unit-info .meta {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .unit-stats {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .stat-pill.lessons {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+      .stat-pill.quizzes {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .chevron {
+        color: var(--gray-300);
+        transition: transform 0.2s;
+      }
+      .unit-card.expanded .chevron {
+        transform: rotate(180deg);
+      }
+
+      /* Lesson Row */
+      .unit-body {
+        padding: 0 20px 16px;
+      }
+
+      .lesson-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: var(--radius);
+        transition: background 0.15s;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .lesson-row:hover {
+        background: var(--mint-pale);
+      }
+
+      .lesson-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--gray-50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .lesson-icon svg {
+        width: 18px;
+        color: var(--gray-400);
+      }
+
+      .lesson-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .lesson-info .title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .lesson-info .desc {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .lesson-badges {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .badge-pdf {
+        background: var(--pink-light);
+        color: var(--coral);
+      }
+      .badge-quiz {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+      .badge-quiz-count {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .badge svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .lesson-menu {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--gray-300);
+        flex-shrink: 0;
+      }
+
+      .lesson-menu:hover {
+        background: var(--gray-100);
+        color: var(--gray-500);
+      }
+
+      /* Add Actions */
+      .add-row {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        padding: 12px 0 4px;
+        border-top: 1px dashed var(--gray-200);
+        margin-top: 8px;
+      }
+
+      .add-btn {
+        font-family: "Nunito", sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--mint-dark);
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.15s;
+      }
+
+      .add-btn:hover {
+        background: var(--mint-light);
+      }
+      .add-btn.quiz-add {
+        color: var(--purple);
+      }
+      .add-btn.quiz-add:hover {
+        background: var(--purple-light);
+      }
+
+      /* New Week Button */
+      .btn-primary {
+        font-family: "Nunito", sans-serif;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        background: var(--mint);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(67, 198, 172, 0.3);
+      }
+
+      .btn-primary:hover {
+        background: var(--mint-dark);
+        transform: translateY(-1px);
+      }
+
+      /* ===== SCREEN 2: Lesson Detail ===== */
+      .lesson-detail-layout {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .lesson-content-area {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        border: 1px solid var(--gray-100);
+      }
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-bottom: 20px;
+      }
+
+      .breadcrumb a {
+        color: var(--mint-dark);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      .lesson-detail-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .lesson-detail-meta {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-bottom: 20px;
+      }
+
+      .pdf-banner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        margin-bottom: 24px;
+      }
+
+      .pdf-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--pink-light);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--coral);
+        font-weight: 800;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .pdf-info {
+        flex: 1;
+      }
+      .pdf-info .name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+      .pdf-info .size {
+        font-size: 12px;
+        color: var(--gray-400);
+      }
+
+      .btn-secondary {
+        font-family: "Nunito", sans-serif;
+        padding: 8px 18px;
+        background: var(--white);
+        border: 1.5px solid var(--mint);
+        color: var(--mint-dark);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-secondary:hover {
+        background: var(--mint-light);
+      }
+
+      .markdown-content {
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--gray-700);
+      }
+
+      .markdown-content h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin: 28px 0 12px;
+      }
+
+      .markdown-content h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--mint-dark);
+        margin: 20px 0 8px;
+      }
+
+      .markdown-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+      }
+
+      .markdown-content th {
+        text-align: left;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-500);
+        padding: 8px 12px;
+        border-bottom: 2px solid var(--mint);
+      }
+
+      .markdown-content td {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--gray-100);
+      }
+
+      /* Sidebar Panel (Right) */
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .panel-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-100);
+        overflow: hidden;
+      }
+
+      .panel-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px 12px;
+      }
+
+      .panel-card-header h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .panel-card-header h3 .icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+      }
+
+      .quiz-icon-bg {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .panel-card-body {
+        padding: 0 18px 16px;
+      }
+
+      /* Quiz Mini Card */
+      .quiz-mini {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: var(--gray-50);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1.5px solid transparent;
+      }
+
+      .quiz-mini:hover {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+      .quiz-mini:last-child {
+        margin-bottom: 0;
+      }
+
+      .quiz-mini-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--purple-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .quiz-mini-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .quiz-mini-info .title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .quiz-mini-info .meta {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-top: 1px;
+      }
+
+      .quiz-mini-score {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--mint-dark);
+        flex-shrink: 0;
+      }
+
+      .quiz-mini-score.not-started {
+        color: var(--gray-300);
+        font-weight: 600;
+        font-size: 11px;
+      }
+
+      /* Progress bar mini */
+      .progress-mini {
+        width: 100%;
+        height: 4px;
+        background: var(--gray-100);
+        border-radius: 2px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+
+      .progress-mini .fill {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--mint);
+        transition: width 0.4s ease;
+      }
+
+      .progress-mini .fill.purple {
+        background: var(--purple);
+      }
+
+      /* Add quiz button in panel */
+      .add-quiz-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px;
+        border: 1.5px dashed var(--purple);
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--purple);
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-top: 4px;
+        background: transparent;
+        width: 100%;
+        font-family: "Nunito", sans-serif;
+      }
+
+      .add-quiz-panel:hover {
+        background: var(--purple-light);
+      }
+
+      /* ===== SCREEN 3: Add Quiz Modal ===== */
+      .modal-overlay {
+        position: relative;
+        min-height: 680px;
+        background: rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      .modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--mint-pale), var(--white));
+        opacity: 0.7;
+      }
+
+      .modal {
+        position: relative;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        width: 520px;
+        max-height: 580px;
+        overflow: hidden;
+        border: 1px solid var(--gray-100);
+      }
+
+      .modal-header {
+        padding: 24px 28px 16px;
+        border-bottom: 1px solid var(--gray-100);
+      }
+
+      .modal-header h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .modal-header p {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-top: 4px;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: var(--gray-50);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-400);
+        font-size: 18px;
+        transition: all 0.15s;
+      }
+
+      .modal-close:hover {
+        background: var(--gray-100);
+        color: var(--gray-600);
+      }
+
+      .modal-body {
+        padding: 24px 28px;
+      }
+
+      /* Method Cards */
+      .method-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .method-card {
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 20px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .method-card:hover {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+      .method-card.selected {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+
+      .method-card .icon {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 12px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+      }
+
+      .method-card .icon.upload {
+        background: var(--blue-light);
+      }
+      .method-card .icon.generate {
+        background: var(--amber-light);
+      }
+
+      .method-card .label {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+
+      .method-card .desc {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 4px;
+      }
+
+      /* Upload area */
+      .upload-zone {
+        border: 2px dashed var(--gray-200);
+        border-radius: var(--radius);
+        padding: 32px 20px;
+        text-align: center;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+
+      .upload-zone:hover {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+      .upload-zone .icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+      .upload-zone .text {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-600);
+      }
+      .upload-zone .hint {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 4px;
+      }
+
+      .modal-footer {
+        padding: 16px 28px;
+        border-top: 1px solid var(--gray-100);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .btn-ghost {
+        font-family: "Nunito", sans-serif;
+        padding: 10px 20px;
+        background: none;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-ghost:hover {
+        border-color: var(--gray-300);
+        color: var(--gray-700);
+      }
+
+      .btn-purple {
+        font-family: "Nunito", sans-serif;
+        padding: 10px 22px;
+        background: var(--purple);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+      }
+
+      .btn-purple:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+
+      /* Attach-to selector */
+      .attach-to {
+        margin-bottom: 20px;
+      }
+
+      .attach-to label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--gray-500);
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .attach-options {
+        display: flex;
+        gap: 8px;
+      }
+
+      .attach-option {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-500);
+      }
+
+      .attach-option:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+      .attach-option.selected {
+        border-color: var(--purple);
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      /* ===== SCREEN 4: Quizzes Aggregated View ===== */
+      .filter-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-chip {
+        padding: 6px 14px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 100px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.15s;
+        background: var(--white);
+      }
+
+      .filter-chip:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+      .filter-chip.active {
+        background: var(--purple);
+        border-color: var(--purple);
+        color: white;
+      }
+
+      .quiz-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+
+      .quiz-card {
+        background: var(--white);
+        border: 1.5px solid var(--mint-border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        transition: all 0.2s;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .quiz-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+
+      .quiz-card-status {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .status-progress {
+        background: var(--mint);
+        color: white;
+      }
+      .status-new {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+      .status-done {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+
+      .quiz-card .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+        padding-right: 80px;
+      }
+
+      .quiz-card .source {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .quiz-card .source .dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--gray-300);
+      }
+
+      .quiz-card .stats-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .quiz-card .stat {
+        font-size: 12px;
+        color: var(--gray-500);
+      }
+
+      .quiz-card .stat strong {
+        color: var(--gray-700);
+        font-weight: 700;
+      }
+
+      .quiz-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--gray-100);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .quiz-progress-bar .fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--mint), var(--mint-dark));
+        transition: width 0.5s ease;
+      }
+
+      .quiz-card .btn-continue {
+        font-family: "Nunito", sans-serif;
+        width: 100%;
+        padding: 10px;
+        border: 1.5px solid var(--gray-200);
+        background: var(--white);
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .quiz-card .btn-continue:hover {
+        border-color: var(--mint);
+        color: var(--mint-dark);
+        background: var(--mint-pale);
+      }
+
+      /* Annotation Callout */
+      .annotation {
+        background: var(--amber-light);
+        border-left: 3px solid var(--amber);
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0;
+        font-size: 13px;
+        color: var(--gray-600);
+      }
+
+      .annotation strong {
+        color: var(--gray-800);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mock-container">
+      <div class="mock-header">
+        <h1>🪅 Piñata — Desktop Mockups</h1>
+        <p>Quiz-in-Lessons Feature &middot; March 2026</p>
+      </div>
+
+      <div class="screen-nav">
+        <button class="active" onclick="showScreen('lessons')">
+          ① Lessons Page
+        </button>
+        <button onclick="showScreen('detail')">② Lesson Detail</button>
+        <button onclick="showScreen('addquiz')">③ Add Quiz Modal</button>
+        <button onclick="showScreen('quizzes')">④ Quizzes (Aggregated)</button>
+      </div>
+
+      <!-- SCREEN 1: Lessons Page -->
+      <div class="screen active" id="screen-lessons">
+        <div class="screen-label">
+          Lessons — Units with inline quiz indicators
+        </div>
+        <div class="app-shell">
+          <!-- Sidebar -->
+          <div class="sidebar">
+            <div class="sidebar-logo"><span class="emoji">🪅</span> Piñata</div>
+            <div class="sidebar-section">Learn</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Quizzes
+            </div>
+            <div class="sidebar-item active">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                />
+              </svg>
+              Lessons
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              History
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              Hablar
+              <span class="sidebar-badge badge-beta">beta</span>
+            </div>
+            <div class="sidebar-section">Tools</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Prompts
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18" />
+              </svg>
+              Vocabulary
+              <span class="sidebar-badge badge-soon">soon</span>
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Progress
+            </div>
+            <div class="sidebar-bottom">
+              <div class="sidebar-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                  />
+                </svg>
+                Settings
+              </div>
+              <div class="sidebar-user">
+                <div class="avatar">I</div>
+                <div class="info">
+                  <div class="name">Iulian</div>
+                  <div class="meta">Unit 1 · 3 lessons</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main -->
+          <div class="main">
+            <div class="main-header">
+              <div class="main-header-row">
+                <div>
+                  <h1>Hola, Iulian</h1>
+                  <div class="subtitle">Ready to practice?</div>
+                </div>
+                <button class="btn-primary">+ New week</button>
+              </div>
+            </div>
+
+            <div class="search-bar">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" placeholder="Search all lessons..." />
+            </div>
+
+            <!-- Unit 1 -->
+            <div class="unit-card expanded">
+              <div class="unit-header">
+                <div class="unit-number">1</div>
+                <div class="unit-info">
+                  <div class="title">Unit #1: Spanish Introductions</div>
+                  <div class="meta">3 lessons · 4 quizzes</div>
+                </div>
+                <div class="unit-stats">
+                  <span class="stat-pill lessons">📖 3 lessons</span>
+                  <span class="stat-pill quizzes">🧩 4 quizzes</span>
+                </div>
+                <svg
+                  class="chevron"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+              <div class="unit-body">
+                <!-- Lesson 1 -->
+                <div class="lesson-row">
+                  <div class="lesson-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="lesson-info">
+                    <div class="title">
+                      Lesson #1: Learn the Greetings Natives Use Daily
+                    </div>
+                    <div class="desc">
+                      From Zero to Spanish Hero 2.0 — Nivel A1 Unidad 1
+                    </div>
+                  </div>
+                  <div class="lesson-badges">
+                    <span class="badge badge-pdf">📄 PDF ✓</span>
+                    <span class="badge badge-quiz">🧩 2 quizzes</span>
+                  </div>
+                  <div class="lesson-menu">⋮</div>
+                </div>
+
+                <!-- Lesson 2 -->
+                <div class="lesson-row">
+                  <div class="lesson-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="lesson-info">
+                    <div class="title">
+                      Lesson #2: Presentaciones Personales
+                    </div>
+                    <div class="desc">
+                      Introducing yourself, asking names and origins
+                    </div>
+                  </div>
+                  <div class="lesson-badges">
+                    <span class="badge badge-pdf">📄 PDF ✓</span>
+                    <span class="badge badge-quiz">🧩 1 quiz</span>
+                  </div>
+                  <div class="lesson-menu">⋮</div>
+                </div>
+
+                <!-- Lesson 3 -->
+                <div class="lesson-row">
+                  <div class="lesson-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="lesson-info">
+                    <div class="title">
+                      Lesson #3: Verbos Básicos del Español
+                    </div>
+                    <div class="desc">
+                      Ser, estar, tener, ir — present tense basics
+                    </div>
+                  </div>
+                  <div class="lesson-badges">
+                    <span class="badge badge-pdf">📄 PDF ✓</span>
+                    <span class="badge badge-quiz" style="opacity: 0.4"
+                      >🧩 No quizzes</span
+                    >
+                  </div>
+                  <div class="lesson-menu">⋮</div>
+                </div>
+
+                <div class="add-row">
+                  <button class="add-btn">+ Add lesson</button>
+                  <button class="add-btn quiz-add">+ Add unit quiz</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="annotation">
+              <strong>✨ What's new:</strong> Each lesson now shows quiz count
+              badges. The unit footer has a dedicated "Add unit quiz" action for
+              quizzes that span multiple lessons (e.g., unit review quizzes).
+              Individual lesson quizzes are added from inside the lesson detail
+              view.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Lesson Detail -->
+      <div class="screen" id="screen-detail">
+        <div class="screen-label">
+          Lesson Detail — Content + Quiz sidebar panel
+        </div>
+        <div class="app-shell">
+          <div class="sidebar">
+            <div class="sidebar-logo"><span class="emoji">🪅</span> Piñata</div>
+            <div class="sidebar-section">Learn</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Quizzes
+            </div>
+            <div class="sidebar-item active">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                />
+              </svg>
+              Lessons
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              History
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              Hablar <span class="sidebar-badge badge-beta">beta</span>
+            </div>
+            <div class="sidebar-section">Tools</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Prompts
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18" />
+              </svg>
+              Vocabulary <span class="sidebar-badge badge-soon">soon</span>
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Progress
+            </div>
+            <div class="sidebar-bottom">
+              <div class="sidebar-user">
+                <div class="avatar">I</div>
+                <div class="info">
+                  <div class="name">Iulian</div>
+                  <div class="meta">Unit 1 · 3 lessons</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="main" style="padding: 24px">
+            <div class="lesson-detail-layout">
+              <div class="lesson-content-area">
+                <div class="breadcrumb">
+                  <a href="#">← Back to lessons</a>
+                </div>
+                <h1 class="lesson-detail-title">
+                  Lesson #1: Learn the Greetings Natives Use Daily
+                </h1>
+                <div class="lesson-detail-meta">
+                  Week 1 · Unit #1: Spanish Introductions
+                </div>
+
+                <div class="pdf-banner">
+                  <div class="pdf-icon">PDF</div>
+                  <div class="pdf-info">
+                    <div class="name">
+                      Leccion_2_Libro_de_Texto_Ejercicios.pdf
+                    </div>
+                    <div class="size">8.4 MB · Available offline</div>
+                  </div>
+                  <button class="btn-secondary">View PDF</button>
+                </div>
+
+                <div class="markdown-content">
+                  <h2>From Zero to Spanish Hero 2.0 — Nivel A1</h2>
+                  <h3>1. Recognizable Spanish Words (Cognates)</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Spanish</th>
+                        <th>English</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Aeropuerto</td>
+                        <td>Airport</td>
+                      </tr>
+                      <tr>
+                        <td>Menú</td>
+                        <td>Menu</td>
+                      </tr>
+                      <tr>
+                        <td>Avenida</td>
+                        <td>Avenue</td>
+                      </tr>
+                      <tr>
+                        <td>Escuela</td>
+                        <td>School</td>
+                      </tr>
+                      <tr>
+                        <td>Hola</td>
+                        <td>Hello</td>
+                      </tr>
+                      <tr>
+                        <td>Baños</td>
+                        <td>Toilets</td>
+                      </tr>
+                      <tr>
+                        <td>Cafetería</td>
+                        <td>Cafe</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h3>2. Greetings &amp; Goodbyes</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Saludos</th>
+                        <th>Despedidas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Hola</td>
+                        <td>Chau</td>
+                      </tr>
+                      <tr>
+                        <td>¿Qué tal?</td>
+                        <td>Adiós</td>
+                      </tr>
+                      <tr>
+                        <td>¿Cómo estás?</td>
+                        <td>¡Hasta pronto!</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Right Panel -->
+              <div class="side-panel">
+                <!-- Quizzes Panel -->
+                <div class="panel-card">
+                  <div class="panel-card-header">
+                    <h3>
+                      <span class="icon quiz-icon-bg">🧩</span>
+                      Quizzes
+                    </h3>
+                    <span style="font-size: 12px; color: var(--gray-400)"
+                      >2 quizzes</span
+                    >
+                  </div>
+                  <div class="panel-card-body">
+                    <div class="quiz-mini">
+                      <div class="quiz-mini-icon">📝</div>
+                      <div class="quiz-mini-info">
+                        <div class="title">Saludos y presentaciones</div>
+                        <div class="meta">15 questions · Best: 87%</div>
+                        <div class="progress-mini">
+                          <div class="fill" style="width: 87%"></div>
+                        </div>
+                      </div>
+                      <div class="quiz-mini-score">87%</div>
+                    </div>
+
+                    <div class="quiz-mini">
+                      <div class="quiz-mini-icon">📝</div>
+                      <div class="quiz-mini-info">
+                        <div class="title">Cognates & Vocabulary</div>
+                        <div class="meta">10 questions · Not started</div>
+                        <div class="progress-mini">
+                          <div class="fill" style="width: 0%"></div>
+                        </div>
+                      </div>
+                      <div class="quiz-mini-score not-started">—</div>
+                    </div>
+
+                    <button class="add-quiz-panel">+ Add quiz</button>
+                  </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="panel-card">
+                  <div class="panel-card-header">
+                    <h3>
+                      <span
+                        class="icon"
+                        style="
+                          background: var(--mint-light);
+                          color: var(--mint-dark);
+                        "
+                        >📊</span
+                      >
+                      Lesson Progress
+                    </h3>
+                  </div>
+                  <div class="panel-card-body">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: baseline;
+                        margin-bottom: 12px;
+                      "
+                    >
+                      <span
+                        style="
+                          font-size: 32px;
+                          font-weight: 800;
+                          color: var(--mint-dark);
+                        "
+                        >87%</span
+                      >
+                      <span style="font-size: 12px; color: var(--gray-400)"
+                        >Best quiz score</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        font-size: 13px;
+                        color: var(--gray-500);
+                        line-height: 1.6;
+                      "
+                    >
+                      <div
+                        style="display: flex; justify-content: space-between"
+                      >
+                        <span>Attempts</span
+                        ><strong style="color: var(--gray-700)">3</strong>
+                      </div>
+                      <div
+                        style="display: flex; justify-content: space-between"
+                      >
+                        <span>Average</span
+                        ><strong style="color: var(--gray-700)">72%</strong>
+                      </div>
+                      <div
+                        style="display: flex; justify-content: space-between"
+                      >
+                        <span>Last practiced</span
+                        ><strong style="color: var(--gray-700)"
+                          >2 days ago</strong
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="annotation" style="margin-top: 24px">
+              <strong>✨ What's new:</strong> The lesson detail now has a right
+              sidebar panel with quizzes attached to this specific lesson. Users
+              can start a quiz directly, see their best score at a glance, and
+              add new quizzes via upload or AI generation. The progress card
+              aggregates quiz performance for this lesson.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: Add Quiz Modal -->
+      <div class="screen" id="screen-addquiz">
+        <div class="screen-label">
+          Add Quiz Modal — Upload JSON or Generate from Lesson
+        </div>
+        <div class="modal-overlay">
+          <div class="modal-backdrop"></div>
+          <div class="modal">
+            <div class="modal-header">
+              <h2>Add a Quiz</h2>
+              <p>Attach a quiz to this lesson or unit</p>
+              <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="attach-to">
+                <label>Attach to</label>
+                <div class="attach-options">
+                  <div class="attach-option selected">
+                    📖 Lesson #1: Greetings
+                  </div>
+                  <div class="attach-option">📁 Unit #1: Introductions</div>
+                </div>
+              </div>
+
+              <div class="method-grid">
+                <div class="method-card selected">
+                  <div class="icon upload">📤</div>
+                  <div class="label">Upload JSON</div>
+                  <div class="desc">
+                    Import a quiz file you've already prepared
+                  </div>
+                </div>
+                <div class="method-card">
+                  <div class="icon generate">✨</div>
+                  <div class="label">Generate with AI</div>
+                  <div class="desc">Auto-create from lesson PDF or content</div>
+                </div>
+              </div>
+
+              <div class="upload-zone">
+                <div class="icon">📁</div>
+                <div class="text">Drop your quiz JSON here</div>
+                <div class="hint">or click to browse · .json files only</div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-ghost">Cancel</button>
+              <button class="btn-purple">Add Quiz</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation">
+          <strong>✨ Design notes:</strong> The modal lets users choose where to
+          attach the quiz (lesson or unit). Two creation methods: Upload JSON
+          (current workflow) and Generate with AI (future). The "Attach to"
+          selector defaults to the context the user was in (e.g., if they
+          clicked "+ Add quiz" from Lesson #1, it pre-selects that lesson). The
+          unit option allows creating review/cumulative quizzes.
+        </div>
+      </div>
+
+      <!-- SCREEN 4: Quizzes Aggregated View -->
+      <div class="screen" id="screen-quizzes">
+        <div class="screen-label">
+          Quizzes Page — Aggregated view filtered by unit/lesson
+        </div>
+        <div class="app-shell">
+          <div class="sidebar">
+            <div class="sidebar-logo"><span class="emoji">🪅</span> Piñata</div>
+            <div class="sidebar-section">Learn</div>
+            <div class="sidebar-item active">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Quizzes
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                />
+              </svg>
+              Lessons
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              History
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              Hablar <span class="sidebar-badge badge-beta">beta</span>
+            </div>
+            <div class="sidebar-section">Tools</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Prompts
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18" />
+              </svg>
+              Vocabulary <span class="sidebar-badge badge-soon">soon</span>
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Progress
+            </div>
+            <div class="sidebar-bottom">
+              <div class="sidebar-user">
+                <div class="avatar">I</div>
+                <div class="info">
+                  <div class="name">Iulian</div>
+                  <div class="meta">Unit 1 · 3 lessons</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="main">
+            <div class="main-header">
+              <div class="main-header-row">
+                <div>
+                  <h1>Quizzes</h1>
+                  <div class="subtitle">All your quizzes in one place</div>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center">
+                  <span
+                    style="
+                      font-size: 13px;
+                      padding: 5px 14px;
+                      background: var(--mint-light);
+                      color: var(--mint-dark);
+                      border-radius: 100px;
+                      font-weight: 700;
+                    "
+                    >Avg: 58%</span
+                  >
+                  <span
+                    style="
+                      font-size: 13px;
+                      padding: 5px 14px;
+                      background: var(--amber-light);
+                      color: var(--amber);
+                      border-radius: 100px;
+                      font-weight: 700;
+                    "
+                    >Best: 87%</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <span class="filter-chip active">All</span>
+              <span class="filter-chip">Unit 1: Introductions</span>
+              <span class="filter-chip">Lesson 1</span>
+              <span class="filter-chip">Lesson 2</span>
+              <span class="filter-chip">Lesson 3</span>
+              <span
+                style="
+                  margin-left: auto;
+                  font-size: 12px;
+                  color: var(--gray-400);
+                "
+                >4 quizzes · 2 in progress</span
+              >
+            </div>
+
+            <div class="quiz-grid">
+              <div class="quiz-card">
+                <div class="quiz-card-status status-progress">In progress</div>
+                <div class="title">Saludos y presentaciones</div>
+                <div class="source">
+                  <span style="color: var(--purple); font-weight: 600"
+                    >📖 Lesson 1</span
+                  >
+                  <span class="dot"></span>
+                  <span>15 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>87%</strong></div>
+                  <div class="stat">Avg: <strong>72%</strong></div>
+                  <div class="stat">Attempts: <strong>3</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 60%"></div>
+                </div>
+                <button class="btn-continue">Continue →</button>
+              </div>
+
+              <div class="quiz-card">
+                <div class="quiz-card-status status-new">New</div>
+                <div class="title">Cognates & Vocabulary</div>
+                <div class="source">
+                  <span style="color: var(--purple); font-weight: 600"
+                    >📖 Lesson 1</span
+                  >
+                  <span class="dot"></span>
+                  <span>10 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>—</strong></div>
+                  <div class="stat">Avg: <strong>—</strong></div>
+                  <div class="stat">Attempts: <strong>0</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 0%"></div>
+                </div>
+                <button class="btn-continue">Start →</button>
+              </div>
+
+              <div class="quiz-card">
+                <div class="quiz-card-status status-progress">In progress</div>
+                <div class="title">Presentaciones Personales</div>
+                <div class="source">
+                  <span style="color: var(--purple); font-weight: 600"
+                    >📖 Lesson 2</span
+                  >
+                  <span class="dot"></span>
+                  <span>15 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>53%</strong></div>
+                  <div class="stat">Avg: <strong>40%</strong></div>
+                  <div class="stat">Attempts: <strong>2</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 33%"></div>
+                </div>
+                <button class="btn-continue">Continue →</button>
+              </div>
+
+              <div class="quiz-card">
+                <div
+                  class="quiz-card-status status-done"
+                  style="background: var(--blue-light); color: var(--blue)"
+                >
+                  Unit Quiz
+                </div>
+                <div class="title">Unit 1 Review: All Topics</div>
+                <div class="source">
+                  <span style="color: var(--blue); font-weight: 600"
+                    >📁 Unit 1</span
+                  >
+                  <span class="dot"></span>
+                  <span>25 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>—</strong></div>
+                  <div class="stat">Avg: <strong>—</strong></div>
+                  <div class="stat">Attempts: <strong>0</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 0%"></div>
+                </div>
+                <button class="btn-continue">Start →</button>
+              </div>
+            </div>
+
+            <div class="annotation" style="margin-top: 24px">
+              <strong>✨ What's new:</strong> The Quizzes page is now a
+              filterable aggregated view. Each quiz card shows its parent
+              (Lesson or Unit) with color coding — purple for lesson quizzes,
+              blue for unit-level review quizzes. Filter chips let you drill
+              down by unit or lesson. Stats (avg/best) are calculated across all
+              visible quizzes.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function showScreen(id) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((s) => s.classList.remove("active"));
+        document
+          .querySelectorAll(".screen-nav button")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("screen-" + id).classList.add("active");
+        event.target.classList.add("active");
+      }
+    </script>
+  </body>
+</html>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Piñata Desktop Mocks — Quiz in Lessons</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --mint: #43c6ac;
+        --mint-light: #e8f8f5;
+        --mint-pale: #f0fbf8;
+        --mint-border: #b2e8dc;
+        --mint-dark: #2ba88c;
+        --pink: #f87171;
+        --pink-light: #fee2e2;
+        --coral: #ff6b6b;
+        --white: #ffffff;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-400: #9ca3af;
+        --gray-500: #6b7280;
+        --gray-600: #4b5563;
+        --gray-700: #374151;
+        --gray-800: #1f2937;
+        --amber: #f59e0b;
+        --amber-light: #fef3c7;
+        --purple: #8b5cf6;
+        --purple-light: #ede9fe;
+        --blue: #3b82f6;
+        --blue-light: #dbeafe;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+        --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
+        --radius: 12px;
+        --radius-lg: 16px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Nunito", sans-serif;
+        background: var(--gray-50);
+        color: var(--gray-800);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Mock Frame */
+      .mock-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 32px;
+      }
+
+      .mock-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .mock-header h1 {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .mock-header p {
+        color: var(--gray-500);
+        font-size: 15px;
+      }
+
+      .screen-nav {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+      }
+
+      .screen-nav button {
+        font-family: "Nunito", sans-serif;
+        padding: 10px 20px;
+        border: 2px solid var(--gray-200);
+        background: var(--white);
+        border-radius: 100px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .screen-nav button:hover {
+        border-color: var(--mint);
+        color: var(--mint-dark);
+      }
+
+      .screen-nav button.active {
+        background: var(--mint);
+        border-color: var(--mint);
+        color: white;
+      }
+
+      .screen {
+        display: none;
+      }
+      .screen.active {
+        display: block;
+      }
+
+      .screen-label {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--mint-dark);
+      }
+
+      /* App Shell */
+      .app-shell {
+        display: flex;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        overflow: hidden;
+        min-height: 680px;
+        border: 1px solid var(--gray-100);
+      }
+
+      /* Sidebar */
+      .sidebar {
+        width: 210px;
+        background: var(--white);
+        border-right: 1px solid var(--gray-100);
+        padding: 20px 0;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+
+      .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 20px 24px;
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .sidebar-logo .emoji {
+        font-size: 24px;
+      }
+
+      .sidebar-section {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        color: var(--gray-400);
+        padding: 0 20px;
+        margin: 16px 0 8px;
+      }
+
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+
+      .sidebar-item:hover {
+        color: var(--gray-700);
+        background: var(--gray-50);
+      }
+
+      .sidebar-item.active {
+        color: var(--mint-dark);
+        background: var(--mint-light);
+      }
+
+      .sidebar-item.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 4px;
+        bottom: 4px;
+        width: 3px;
+        background: var(--mint);
+        border-radius: 0 3px 3px 0;
+      }
+
+      .sidebar-item svg {
+        width: 18px;
+        height: 18px;
+        opacity: 0.7;
+      }
+      .sidebar-item.active svg {
+        opacity: 1;
+      }
+
+      .sidebar-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 100px;
+        font-weight: 700;
+        margin-left: auto;
+      }
+
+      .badge-beta {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+      .badge-soon {
+        background: var(--gray-100);
+        color: var(--gray-400);
+      }
+
+      .sidebar-bottom {
+        margin-top: auto;
+        border-top: 1px solid var(--gray-100);
+        padding-top: 12px;
+      }
+
+      .sidebar-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+      }
+
+      .sidebar-user .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--mint);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 13px;
+      }
+
+      .sidebar-user .info {
+        font-size: 13px;
+      }
+      .sidebar-user .info .name {
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+      .sidebar-user .info .meta {
+        font-size: 11px;
+        color: var(--gray-400);
+      }
+
+      /* Main Content */
+      .main {
+        flex: 1;
+        padding: 28px 36px;
+        overflow-y: auto;
+        background: var(--gray-50);
+      }
+
+      .main-header {
+        margin-bottom: 24px;
+      }
+
+      .main-header h1 {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .main-header .subtitle {
+        font-size: 14px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .main-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      /* Search Bar */
+      .search-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--white);
+        border: 1.5px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 10px 16px;
+        margin-bottom: 20px;
+        transition: border-color 0.2s;
+      }
+
+      .search-bar:focus-within {
+        border-color: var(--mint);
+      }
+      .search-bar input {
+        border: none;
+        outline: none;
+        font-family: inherit;
+        font-size: 14px;
+        flex: 1;
+        color: var(--gray-700);
+      }
+      .search-bar input::placeholder {
+        color: var(--gray-300);
+      }
+      .search-bar svg {
+        color: var(--gray-300);
+        width: 18px;
+      }
+
+      /* Unit Card */
+      .unit-card {
+        background: var(--white);
+        border: 1.5px solid var(--mint-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .unit-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 20px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .unit-header:hover {
+        background: var(--mint-pale);
+      }
+
+      .unit-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--mint);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .unit-info {
+        flex: 1;
+      }
+      .unit-info .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--gray-800);
+      }
+      .unit-info .meta {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+
+      .unit-stats {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .stat-pill {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .stat-pill.lessons {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+      .stat-pill.quizzes {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .chevron {
+        color: var(--gray-300);
+        transition: transform 0.2s;
+      }
+      .unit-card.expanded .chevron {
+        transform: rotate(180deg);
+      }
+
+      /* Lesson Row */
+      .unit-body {
+        padding: 0 20px 16px;
+      }
+
+      .lesson-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: var(--radius);
+        transition: background 0.15s;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .lesson-row:hover {
+        background: var(--mint-pale);
+      }
+
+      .lesson-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--gray-50);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .lesson-icon svg {
+        width: 18px;
+        color: var(--gray-400);
+      }
+
+      .lesson-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .lesson-info .title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .lesson-info .desc {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .lesson-badges {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .badge-pdf {
+        background: var(--pink-light);
+        color: var(--coral);
+      }
+      .badge-quiz {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+      .badge-quiz-count {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .badge svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .lesson-menu {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--gray-300);
+        flex-shrink: 0;
+      }
+
+      .lesson-menu:hover {
+        background: var(--gray-100);
+        color: var(--gray-500);
+      }
+
+      /* Add Actions */
+      .add-row {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        padding: 12px 0 4px;
+        border-top: 1px dashed var(--gray-200);
+        margin-top: 8px;
+      }
+
+      .add-btn {
+        font-family: "Nunito", sans-serif;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: none;
+        background: none;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--mint-dark);
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.15s;
+      }
+
+      .add-btn:hover {
+        background: var(--mint-light);
+      }
+      .add-btn.quiz-add {
+        color: var(--purple);
+      }
+      .add-btn.quiz-add:hover {
+        background: var(--purple-light);
+      }
+
+      /* New Week Button */
+      .btn-primary {
+        font-family: "Nunito", sans-serif;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px;
+        background: var(--mint);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(67, 198, 172, 0.3);
+      }
+
+      .btn-primary:hover {
+        background: var(--mint-dark);
+        transform: translateY(-1px);
+      }
+
+      /* ===== SCREEN 2: Lesson Detail ===== */
+      .lesson-detail-layout {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .lesson-content-area {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        padding: 32px;
+        border: 1px solid var(--gray-100);
+      }
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-bottom: 20px;
+      }
+
+      .breadcrumb a {
+        color: var(--mint-dark);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .breadcrumb a:hover {
+        text-decoration: underline;
+      }
+
+      .lesson-detail-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+      }
+
+      .lesson-detail-meta {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-bottom: 20px;
+      }
+
+      .pdf-banner {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: var(--gray-50);
+        border: 1px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 14px 18px;
+        margin-bottom: 24px;
+      }
+
+      .pdf-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--pink-light);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--coral);
+        font-weight: 800;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .pdf-info {
+        flex: 1;
+      }
+      .pdf-info .name {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+      .pdf-info .size {
+        font-size: 12px;
+        color: var(--gray-400);
+      }
+
+      .btn-secondary {
+        font-family: "Nunito", sans-serif;
+        padding: 8px 18px;
+        background: var(--white);
+        border: 1.5px solid var(--mint);
+        color: var(--mint-dark);
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-secondary:hover {
+        background: var(--mint-light);
+      }
+
+      .markdown-content {
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--gray-700);
+      }
+
+      .markdown-content h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin: 28px 0 12px;
+      }
+
+      .markdown-content h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--mint-dark);
+        margin: 20px 0 8px;
+      }
+
+      .markdown-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+      }
+
+      .markdown-content th {
+        text-align: left;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-500);
+        padding: 8px 12px;
+        border-bottom: 2px solid var(--mint);
+      }
+
+      .markdown-content td {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-bottom: 1px solid var(--gray-100);
+      }
+
+      /* Sidebar Panel (Right) */
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .panel-card {
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--gray-100);
+        overflow: hidden;
+      }
+
+      .panel-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px 12px;
+      }
+
+      .panel-card-header h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .panel-card-header h3 .icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+      }
+
+      .quiz-icon-bg {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      .panel-card-body {
+        padding: 0 18px 16px;
+      }
+
+      /* Quiz Mini Card */
+      .quiz-mini {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: var(--gray-50);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1.5px solid transparent;
+      }
+
+      .quiz-mini:hover {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+      .quiz-mini:last-child {
+        margin-bottom: 0;
+      }
+
+      .quiz-mini-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--purple-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+
+      .quiz-mini-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .quiz-mini-info .title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gray-700);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .quiz-mini-info .meta {
+        font-size: 11px;
+        color: var(--gray-400);
+        margin-top: 1px;
+      }
+
+      .quiz-mini-score {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--mint-dark);
+        flex-shrink: 0;
+      }
+
+      .quiz-mini-score.not-started {
+        color: var(--gray-300);
+        font-weight: 600;
+        font-size: 11px;
+      }
+
+      /* Progress bar mini */
+      .progress-mini {
+        width: 100%;
+        height: 4px;
+        background: var(--gray-100);
+        border-radius: 2px;
+        margin-top: 6px;
+        overflow: hidden;
+      }
+
+      .progress-mini .fill {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--mint);
+        transition: width 0.4s ease;
+      }
+
+      .progress-mini .fill.purple {
+        background: var(--purple);
+      }
+
+      /* Add quiz button in panel */
+      .add-quiz-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px;
+        border: 1.5px dashed var(--purple);
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--purple);
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-top: 4px;
+        background: transparent;
+        width: 100%;
+        font-family: "Nunito", sans-serif;
+      }
+
+      .add-quiz-panel:hover {
+        background: var(--purple-light);
+      }
+
+      /* ===== SCREEN 3: Add Quiz Modal ===== */
+      .modal-overlay {
+        position: relative;
+        min-height: 680px;
+        background: rgba(0, 0, 0, 0.04);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+
+      .modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--mint-pale), var(--white));
+        opacity: 0.7;
+      }
+
+      .modal {
+        position: relative;
+        background: var(--white);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        width: 520px;
+        max-height: 580px;
+        overflow: hidden;
+        border: 1px solid var(--gray-100);
+      }
+
+      .modal-header {
+        padding: 24px 28px 16px;
+        border-bottom: 1px solid var(--gray-100);
+      }
+
+      .modal-header h2 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--gray-800);
+      }
+
+      .modal-header p {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-top: 4px;
+      }
+
+      .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: var(--gray-50);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gray-400);
+        font-size: 18px;
+        transition: all 0.15s;
+      }
+
+      .modal-close:hover {
+        background: var(--gray-100);
+        color: var(--gray-600);
+      }
+
+      .modal-body {
+        padding: 24px 28px;
+      }
+
+      /* Method Cards */
+      .method-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .method-card {
+        border: 2px solid var(--gray-200);
+        border-radius: var(--radius);
+        padding: 20px 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .method-card:hover {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+      .method-card.selected {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+
+      .method-card .icon {
+        width: 48px;
+        height: 48px;
+        margin: 0 auto 12px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+      }
+
+      .method-card .icon.upload {
+        background: var(--blue-light);
+      }
+      .method-card .icon.generate {
+        background: var(--amber-light);
+      }
+
+      .method-card .label {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+      }
+
+      .method-card .desc {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 4px;
+      }
+
+      /* Upload area */
+      .upload-zone {
+        border: 2px dashed var(--gray-200);
+        border-radius: var(--radius);
+        padding: 32px 20px;
+        text-align: center;
+        transition: all 0.2s;
+        cursor: pointer;
+      }
+
+      .upload-zone:hover {
+        border-color: var(--purple);
+        background: var(--purple-light);
+      }
+      .upload-zone .icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+      .upload-zone .text {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-600);
+      }
+      .upload-zone .hint {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-top: 4px;
+      }
+
+      .modal-footer {
+        padding: 16px 28px;
+        border-top: 1px solid var(--gray-100);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+
+      .btn-ghost {
+        font-family: "Nunito", sans-serif;
+        padding: 10px 20px;
+        background: none;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-ghost:hover {
+        border-color: var(--gray-300);
+        color: var(--gray-700);
+      }
+
+      .btn-purple {
+        font-family: "Nunito", sans-serif;
+        padding: 10px 22px;
+        background: var(--purple);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+      }
+
+      .btn-purple:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+
+      /* Attach-to selector */
+      .attach-to {
+        margin-bottom: 20px;
+      }
+
+      .attach-to label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--gray-500);
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .attach-options {
+        display: flex;
+        gap: 8px;
+      }
+
+      .attach-option {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-500);
+      }
+
+      .attach-option:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+      .attach-option.selected {
+        border-color: var(--purple);
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+
+      /* ===== SCREEN 4: Quizzes Aggregated View ===== */
+      .filter-bar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      .filter-chip {
+        padding: 6px 14px;
+        border: 1.5px solid var(--gray-200);
+        border-radius: 100px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all 0.15s;
+        background: var(--white);
+      }
+
+      .filter-chip:hover {
+        border-color: var(--purple);
+        color: var(--purple);
+      }
+      .filter-chip.active {
+        background: var(--purple);
+        border-color: var(--purple);
+        color: white;
+      }
+
+      .quiz-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+
+      .quiz-card {
+        background: var(--white);
+        border: 1.5px solid var(--mint-border);
+        border-radius: var(--radius-lg);
+        padding: 20px;
+        transition: all 0.2s;
+        cursor: pointer;
+        position: relative;
+      }
+
+      .quiz-card:hover {
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+
+      .quiz-card-status {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        padding: 3px 10px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .status-progress {
+        background: var(--mint);
+        color: white;
+      }
+      .status-new {
+        background: var(--purple-light);
+        color: var(--purple);
+      }
+      .status-done {
+        background: var(--mint-light);
+        color: var(--mint-dark);
+      }
+
+      .quiz-card .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--gray-800);
+        margin-bottom: 4px;
+        padding-right: 80px;
+      }
+
+      .quiz-card .source {
+        font-size: 12px;
+        color: var(--gray-400);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .quiz-card .source .dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--gray-300);
+      }
+
+      .quiz-card .stats-row {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .quiz-card .stat {
+        font-size: 12px;
+        color: var(--gray-500);
+      }
+
+      .quiz-card .stat strong {
+        color: var(--gray-700);
+        font-weight: 700;
+      }
+
+      .quiz-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--gray-100);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+
+      .quiz-progress-bar .fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--mint), var(--mint-dark));
+        transition: width 0.5s ease;
+      }
+
+      .quiz-card .btn-continue {
+        font-family: "Nunito", sans-serif;
+        width: 100%;
+        padding: 10px;
+        border: 1.5px solid var(--gray-200);
+        background: var(--white);
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--gray-700);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .quiz-card .btn-continue:hover {
+        border-color: var(--mint);
+        color: var(--mint-dark);
+        background: var(--mint-pale);
+      }
+
+      /* Annotation Callout */
+      .annotation {
+        background: var(--amber-light);
+        border-left: 3px solid var(--amber);
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        margin: 20px 0;
+        font-size: 13px;
+        color: var(--gray-600);
+      }
+
+      .annotation strong {
+        color: var(--gray-800);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mock-container">
+      <div class="mock-header">
+        <h1>🪅 Piñata — Desktop Mockups</h1>
+        <p>Quiz-in-Lessons Feature &middot; March 2026</p>
+      </div>
+
+      <div class="screen-nav">
+        <button class="active" onclick="showScreen('lessons')">
+          ① Lessons Page
+        </button>
+        <button onclick="showScreen('detail')">② Lesson Detail</button>
+        <button onclick="showScreen('addquiz')">③ Add Quiz Modal</button>
+        <button onclick="showScreen('quizzes')">④ Quizzes (Aggregated)</button>
+      </div>
+
+      <!-- SCREEN 1: Lessons Page -->
+      <div class="screen active" id="screen-lessons">
+        <div class="screen-label">
+          Lessons — Units with inline quiz indicators
+        </div>
+        <div class="app-shell">
+          <!-- Sidebar -->
+          <div class="sidebar">
+            <div class="sidebar-logo"><span class="emoji">🪅</span> Piñata</div>
+            <div class="sidebar-section">Learn</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Quizzes
+            </div>
+            <div class="sidebar-item active">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                />
+              </svg>
+              Lessons
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              History
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              Hablar
+              <span class="sidebar-badge badge-beta">beta</span>
+            </div>
+            <div class="sidebar-section">Tools</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Prompts
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18" />
+              </svg>
+              Vocabulary
+              <span class="sidebar-badge badge-soon">soon</span>
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Progress
+            </div>
+            <div class="sidebar-bottom">
+              <div class="sidebar-item">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                  />
+                </svg>
+                Settings
+              </div>
+              <div class="sidebar-user">
+                <div class="avatar">I</div>
+                <div class="info">
+                  <div class="name">Iulian</div>
+                  <div class="meta">Unit 1 · 3 lessons</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main -->
+          <div class="main">
+            <div class="main-header">
+              <div class="main-header-row">
+                <div>
+                  <h1>Hola, Iulian</h1>
+                  <div class="subtitle">Ready to practice?</div>
+                </div>
+                <button class="btn-primary">+ New week</button>
+              </div>
+            </div>
+
+            <div class="search-bar">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" placeholder="Search all lessons..." />
+            </div>
+
+            <!-- Unit 1 -->
+            <div class="unit-card expanded">
+              <div class="unit-header">
+                <div class="unit-number">1</div>
+                <div class="unit-info">
+                  <div class="title">Unit #1: Spanish Introductions</div>
+                  <div class="meta">3 lessons · 4 quizzes</div>
+                </div>
+                <div class="unit-stats">
+                  <span class="stat-pill lessons">📖 3 lessons</span>
+                  <span class="stat-pill quizzes">🧩 4 quizzes</span>
+                </div>
+                <svg
+                  class="chevron"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+              <div class="unit-body">
+                <!-- Lesson 1 -->
+                <div class="lesson-row">
+                  <div class="lesson-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="lesson-info">
+                    <div class="title">
+                      Lesson #1: Learn the Greetings Natives Use Daily
+                    </div>
+                    <div class="desc">
+                      From Zero to Spanish Hero 2.0 — Nivel A1 Unidad 1
+                    </div>
+                  </div>
+                  <div class="lesson-badges">
+                    <span class="badge badge-pdf">📄 PDF ✓</span>
+                    <span class="badge badge-quiz">🧩 2 quizzes</span>
+                  </div>
+                  <div class="lesson-menu">⋮</div>
+                </div>
+
+                <!-- Lesson 2 -->
+                <div class="lesson-row">
+                  <div class="lesson-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="lesson-info">
+                    <div class="title">
+                      Lesson #2: Presentaciones Personales
+                    </div>
+                    <div class="desc">
+                      Introducing yourself, asking names and origins
+                    </div>
+                  </div>
+                  <div class="lesson-badges">
+                    <span class="badge badge-pdf">📄 PDF ✓</span>
+                    <span class="badge badge-quiz">🧩 1 quiz</span>
+                  </div>
+                  <div class="lesson-menu">⋮</div>
+                </div>
+
+                <!-- Lesson 3 -->
+                <div class="lesson-row">
+                  <div class="lesson-icon">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                      />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                  </div>
+                  <div class="lesson-info">
+                    <div class="title">
+                      Lesson #3: Verbos Básicos del Español
+                    </div>
+                    <div class="desc">
+                      Ser, estar, tener, ir — present tense basics
+                    </div>
+                  </div>
+                  <div class="lesson-badges">
+                    <span class="badge badge-pdf">📄 PDF ✓</span>
+                    <span class="badge badge-quiz" style="opacity: 0.4"
+                      >🧩 No quizzes</span
+                    >
+                  </div>
+                  <div class="lesson-menu">⋮</div>
+                </div>
+
+                <div class="add-row">
+                  <button class="add-btn">+ Add lesson</button>
+                  <button class="add-btn quiz-add">+ Add unit quiz</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="annotation">
+              <strong>✨ What's new:</strong> Each lesson now shows quiz count
+              badges. The unit footer has a dedicated "Add unit quiz" action for
+              quizzes that span multiple lessons (e.g., unit review quizzes).
+              Individual lesson quizzes are added from inside the lesson detail
+              view.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: Lesson Detail -->
+      <div class="screen" id="screen-detail">
+        <div class="screen-label">
+          Lesson Detail — Content + Quiz sidebar panel
+        </div>
+        <div class="app-shell">
+          <div class="sidebar">
+            <div class="sidebar-logo"><span class="emoji">🪅</span> Piñata</div>
+            <div class="sidebar-section">Learn</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Quizzes
+            </div>
+            <div class="sidebar-item active">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                />
+              </svg>
+              Lessons
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              History
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              Hablar <span class="sidebar-badge badge-beta">beta</span>
+            </div>
+            <div class="sidebar-section">Tools</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Prompts
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18" />
+              </svg>
+              Vocabulary <span class="sidebar-badge badge-soon">soon</span>
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Progress
+            </div>
+            <div class="sidebar-bottom">
+              <div class="sidebar-user">
+                <div class="avatar">I</div>
+                <div class="info">
+                  <div class="name">Iulian</div>
+                  <div class="meta">Unit 1 · 3 lessons</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="main" style="padding: 24px">
+            <div class="lesson-detail-layout">
+              <div class="lesson-content-area">
+                <div class="breadcrumb">
+                  <a href="#">← Back to lessons</a>
+                </div>
+                <h1 class="lesson-detail-title">
+                  Lesson #1: Learn the Greetings Natives Use Daily
+                </h1>
+                <div class="lesson-detail-meta">
+                  Week 1 · Unit #1: Spanish Introductions
+                </div>
+
+                <div class="pdf-banner">
+                  <div class="pdf-icon">PDF</div>
+                  <div class="pdf-info">
+                    <div class="name">
+                      Leccion_2_Libro_de_Texto_Ejercicios.pdf
+                    </div>
+                    <div class="size">8.4 MB · Available offline</div>
+                  </div>
+                  <button class="btn-secondary">View PDF</button>
+                </div>
+
+                <div class="markdown-content">
+                  <h2>From Zero to Spanish Hero 2.0 — Nivel A1</h2>
+                  <h3>1. Recognizable Spanish Words (Cognates)</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Spanish</th>
+                        <th>English</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Aeropuerto</td>
+                        <td>Airport</td>
+                      </tr>
+                      <tr>
+                        <td>Menú</td>
+                        <td>Menu</td>
+                      </tr>
+                      <tr>
+                        <td>Avenida</td>
+                        <td>Avenue</td>
+                      </tr>
+                      <tr>
+                        <td>Escuela</td>
+                        <td>School</td>
+                      </tr>
+                      <tr>
+                        <td>Hola</td>
+                        <td>Hello</td>
+                      </tr>
+                      <tr>
+                        <td>Baños</td>
+                        <td>Toilets</td>
+                      </tr>
+                      <tr>
+                        <td>Cafetería</td>
+                        <td>Cafe</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h3>2. Greetings &amp; Goodbyes</h3>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Saludos</th>
+                        <th>Despedidas</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Hola</td>
+                        <td>Chau</td>
+                      </tr>
+                      <tr>
+                        <td>¿Qué tal?</td>
+                        <td>Adiós</td>
+                      </tr>
+                      <tr>
+                        <td>¿Cómo estás?</td>
+                        <td>¡Hasta pronto!</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Right Panel -->
+              <div class="side-panel">
+                <!-- Quizzes Panel -->
+                <div class="panel-card">
+                  <div class="panel-card-header">
+                    <h3>
+                      <span class="icon quiz-icon-bg">🧩</span>
+                      Quizzes
+                    </h3>
+                    <span style="font-size: 12px; color: var(--gray-400)"
+                      >2 quizzes</span
+                    >
+                  </div>
+                  <div class="panel-card-body">
+                    <div class="quiz-mini">
+                      <div class="quiz-mini-icon">📝</div>
+                      <div class="quiz-mini-info">
+                        <div class="title">Saludos y presentaciones</div>
+                        <div class="meta">15 questions · Best: 87%</div>
+                        <div class="progress-mini">
+                          <div class="fill" style="width: 87%"></div>
+                        </div>
+                      </div>
+                      <div class="quiz-mini-score">87%</div>
+                    </div>
+
+                    <div class="quiz-mini">
+                      <div class="quiz-mini-icon">📝</div>
+                      <div class="quiz-mini-info">
+                        <div class="title">Cognates & Vocabulary</div>
+                        <div class="meta">10 questions · Not started</div>
+                        <div class="progress-mini">
+                          <div class="fill" style="width: 0%"></div>
+                        </div>
+                      </div>
+                      <div class="quiz-mini-score not-started">—</div>
+                    </div>
+
+                    <button class="add-quiz-panel">+ Add quiz</button>
+                  </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="panel-card">
+                  <div class="panel-card-header">
+                    <h3>
+                      <span
+                        class="icon"
+                        style="
+                          background: var(--mint-light);
+                          color: var(--mint-dark);
+                        "
+                        >📊</span
+                      >
+                      Lesson Progress
+                    </h3>
+                  </div>
+                  <div class="panel-card-body">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: baseline;
+                        margin-bottom: 12px;
+                      "
+                    >
+                      <span
+                        style="
+                          font-size: 32px;
+                          font-weight: 800;
+                          color: var(--mint-dark);
+                        "
+                        >87%</span
+                      >
+                      <span style="font-size: 12px; color: var(--gray-400)"
+                        >Best quiz score</span
+                      >
+                    </div>
+                    <div
+                      style="
+                        font-size: 13px;
+                        color: var(--gray-500);
+                        line-height: 1.6;
+                      "
+                    >
+                      <div
+                        style="display: flex; justify-content: space-between"
+                      >
+                        <span>Attempts</span
+                        ><strong style="color: var(--gray-700)">3</strong>
+                      </div>
+                      <div
+                        style="display: flex; justify-content: space-between"
+                      >
+                        <span>Average</span
+                        ><strong style="color: var(--gray-700)">72%</strong>
+                      </div>
+                      <div
+                        style="display: flex; justify-content: space-between"
+                      >
+                        <span>Last practiced</span
+                        ><strong style="color: var(--gray-700)"
+                          >2 days ago</strong
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="annotation" style="margin-top: 24px">
+              <strong>✨ What's new:</strong> The lesson detail now has a right
+              sidebar panel with quizzes attached to this specific lesson. Users
+              can start a quiz directly, see their best score at a glance, and
+              add new quizzes via upload or AI generation. The progress card
+              aggregates quiz performance for this lesson.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: Add Quiz Modal -->
+      <div class="screen" id="screen-addquiz">
+        <div class="screen-label">
+          Add Quiz Modal — Upload JSON or Generate from Lesson
+        </div>
+        <div class="modal-overlay">
+          <div class="modal-backdrop"></div>
+          <div class="modal">
+            <div class="modal-header">
+              <h2>Add a Quiz</h2>
+              <p>Attach a quiz to this lesson or unit</p>
+              <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+              <div class="attach-to">
+                <label>Attach to</label>
+                <div class="attach-options">
+                  <div class="attach-option selected">
+                    📖 Lesson #1: Greetings
+                  </div>
+                  <div class="attach-option">📁 Unit #1: Introductions</div>
+                </div>
+              </div>
+
+              <div class="method-grid">
+                <div class="method-card selected">
+                  <div class="icon upload">📤</div>
+                  <div class="label">Upload JSON</div>
+                  <div class="desc">
+                    Import a quiz file you've already prepared
+                  </div>
+                </div>
+                <div class="method-card">
+                  <div class="icon generate">✨</div>
+                  <div class="label">Generate with AI</div>
+                  <div class="desc">Auto-create from lesson PDF or content</div>
+                </div>
+              </div>
+
+              <div class="upload-zone">
+                <div class="icon">📁</div>
+                <div class="text">Drop your quiz JSON here</div>
+                <div class="hint">or click to browse · .json files only</div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn-ghost">Cancel</button>
+              <button class="btn-purple">Add Quiz</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="annotation">
+          <strong>✨ Design notes:</strong> The modal lets users choose where to
+          attach the quiz (lesson or unit). Two creation methods: Upload JSON
+          (current workflow) and Generate with AI (future). The "Attach to"
+          selector defaults to the context the user was in (e.g., if they
+          clicked "+ Add quiz" from Lesson #1, it pre-selects that lesson). The
+          unit option allows creating review/cumulative quizzes.
+        </div>
+      </div>
+
+      <!-- SCREEN 4: Quizzes Aggregated View -->
+      <div class="screen" id="screen-quizzes">
+        <div class="screen-label">
+          Quizzes Page — Aggregated view filtered by unit/lesson
+        </div>
+        <div class="app-shell">
+          <div class="sidebar">
+            <div class="sidebar-logo"><span class="emoji">🪅</span> Piñata</div>
+            <div class="sidebar-section">Learn</div>
+            <div class="sidebar-item active">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              Quizzes
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                <path
+                  d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                />
+              </svg>
+              Lessons
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              History
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"
+                />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              </svg>
+              Hablar <span class="sidebar-badge badge-beta">beta</span>
+            </div>
+            <div class="sidebar-section">Tools</div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+                />
+              </svg>
+              Prompts
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18" />
+              </svg>
+              Vocabulary <span class="sidebar-badge badge-soon">soon</span>
+            </div>
+            <div class="sidebar-item">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Progress
+            </div>
+            <div class="sidebar-bottom">
+              <div class="sidebar-user">
+                <div class="avatar">I</div>
+                <div class="info">
+                  <div class="name">Iulian</div>
+                  <div class="meta">Unit 1 · 3 lessons</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="main">
+            <div class="main-header">
+              <div class="main-header-row">
+                <div>
+                  <h1>Quizzes</h1>
+                  <div class="subtitle">All your quizzes in one place</div>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center">
+                  <span
+                    style="
+                      font-size: 13px;
+                      padding: 5px 14px;
+                      background: var(--mint-light);
+                      color: var(--mint-dark);
+                      border-radius: 100px;
+                      font-weight: 700;
+                    "
+                    >Avg: 58%</span
+                  >
+                  <span
+                    style="
+                      font-size: 13px;
+                      padding: 5px 14px;
+                      background: var(--amber-light);
+                      color: var(--amber);
+                      border-radius: 100px;
+                      font-weight: 700;
+                    "
+                    >Best: 87%</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <span class="filter-chip active">All</span>
+              <span class="filter-chip">Unit 1: Introductions</span>
+              <span class="filter-chip">Lesson 1</span>
+              <span class="filter-chip">Lesson 2</span>
+              <span class="filter-chip">Lesson 3</span>
+              <span
+                style="
+                  margin-left: auto;
+                  font-size: 12px;
+                  color: var(--gray-400);
+                "
+                >4 quizzes · 2 in progress</span
+              >
+            </div>
+
+            <div class="quiz-grid">
+              <div class="quiz-card">
+                <div class="quiz-card-status status-progress">In progress</div>
+                <div class="title">Saludos y presentaciones</div>
+                <div class="source">
+                  <span style="color: var(--purple); font-weight: 600"
+                    >📖 Lesson 1</span
+                  >
+                  <span class="dot"></span>
+                  <span>15 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>87%</strong></div>
+                  <div class="stat">Avg: <strong>72%</strong></div>
+                  <div class="stat">Attempts: <strong>3</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 60%"></div>
+                </div>
+                <button class="btn-continue">Continue →</button>
+              </div>
+
+              <div class="quiz-card">
+                <div class="quiz-card-status status-new">New</div>
+                <div class="title">Cognates & Vocabulary</div>
+                <div class="source">
+                  <span style="color: var(--purple); font-weight: 600"
+                    >📖 Lesson 1</span
+                  >
+                  <span class="dot"></span>
+                  <span>10 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>—</strong></div>
+                  <div class="stat">Avg: <strong>—</strong></div>
+                  <div class="stat">Attempts: <strong>0</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 0%"></div>
+                </div>
+                <button class="btn-continue">Start →</button>
+              </div>
+
+              <div class="quiz-card">
+                <div class="quiz-card-status status-progress">In progress</div>
+                <div class="title">Presentaciones Personales</div>
+                <div class="source">
+                  <span style="color: var(--purple); font-weight: 600"
+                    >📖 Lesson 2</span
+                  >
+                  <span class="dot"></span>
+                  <span>15 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>53%</strong></div>
+                  <div class="stat">Avg: <strong>40%</strong></div>
+                  <div class="stat">Attempts: <strong>2</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 33%"></div>
+                </div>
+                <button class="btn-continue">Continue →</button>
+              </div>
+
+              <div class="quiz-card">
+                <div
+                  class="quiz-card-status status-done"
+                  style="background: var(--blue-light); color: var(--blue)"
+                >
+                  Unit Quiz
+                </div>
+                <div class="title">Unit 1 Review: All Topics</div>
+                <div class="source">
+                  <span style="color: var(--blue); font-weight: 600"
+                    >📁 Unit 1</span
+                  >
+                  <span class="dot"></span>
+                  <span>25 questions</span>
+                </div>
+                <div class="stats-row">
+                  <div class="stat">Best: <strong>—</strong></div>
+                  <div class="stat">Avg: <strong>—</strong></div>
+                  <div class="stat">Attempts: <strong>0</strong></div>
+                </div>
+                <div class="quiz-progress-bar">
+                  <div class="fill" style="width: 0%"></div>
+                </div>
+                <button class="btn-continue">Start →</button>
+              </div>
+            </div>
+
+            <div class="annotation" style="margin-top: 24px">
+              <strong>✨ What's new:</strong> The Quizzes page is now a
+              filterable aggregated view. Each quiz card shows its parent
+              (Lesson or Unit) with color coding — purple for lesson quizzes,
+              blue for unit-level review quizzes. Filter chips let you drill
+              down by unit or lesson. Stats (avg/best) are calculated across all
+              visible quizzes.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function showScreen(id) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((s) => s.classList.remove("active"));
+        document
+          .querySelectorAll(".screen-nav button")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById("screen-" + id).classList.add("active");
+        event.target.classList.add("active");
+      }
+    </script>
+  </body>
+</html>
