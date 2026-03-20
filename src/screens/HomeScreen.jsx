@@ -7,6 +7,7 @@ import SkeletonCard from "../components/SkeletonCard";
 import MiniScoreCircle from "../components/MiniScoreCircle";
 import AddQuizSheet from "../components/AddQuizSheet";
 import ConfirmModal from "../components/ConfirmModal";
+import DesktopSidebar from "../components/DesktopSidebar";
 
 export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onSelectQuiz, session }) {
   const navigate = useNavigate();
@@ -82,9 +83,17 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
     setPullDistance(0); isPulling.current = false;
   };
 
+  const inProgressCount = Object.keys(quizProgress).length;
+
   return (
     <div className="fade-in" onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
       style={{ minHeight: "100vh", background: C.bg }}>
+      <DesktopSidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        onNavigateDialog={() => navigate("/dialog")}
+        inProgressCount={inProgressCount}
+      />
       {pullDistance > 0 && (
         <div style={{ textAlign: "center", padding: `${pullDistance * 0.3}px 0`, color: C.muted, fontSize: 13, fontWeight: 600, transition: "padding 0.1s" }}>
           <span style={{ display: "inline-block", transform: `rotate(${pullDistance > 50 ? 180 : 0}deg)`, transition: "transform 0.2s" }}>↓</span>
@@ -93,7 +102,7 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
       )}
 
       {/* Fixed header */}
-      <div ref={headerRef} className="safe-top" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0" }}>
+      <div ref={headerRef} className="safe-top desktop-main desktop-header-fixed" style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 20, background: C.bg, padding: "16px 20px 0" }}>
        <div className="app-header-inner">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
           <div>
@@ -143,12 +152,20 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
               ) : cloudHistory.length === 0 && streak === 0 ? (
                 <p style={{ color: C.muted, fontSize: 13, fontWeight: 600 }}>Complete your first quiz!</p>
               ) : null}
+              {/* Stat pill: in progress (desktop only, shown inline with other pills) */}
+              {inProgressCount > 0 && (
+                <span className="desktop-in-progress-pill" style={{
+                  padding: "5px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
+                  background: "#fff", color: C.text, border: `1px solid ${C.border}`,
+                  display: "none",
+                }}>{inProgressCount} in progress</span>
+              )}
             </>
           )}
         </div>
 
         {/* Tab bar — pill style */}
-        <div style={{ display: "flex", borderRadius: 12, background: C.accentLight, padding: 4, marginBottom: 16 }}>
+        <div className="mobile-tab-bar" style={{ display: "flex", borderRadius: 12, background: C.accentLight, padding: 4, marginBottom: 16 }}>
           {["Quizzes", "History"].map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab.toLowerCase())} style={{
               flex: 1, padding: "8px 0", background: activeTab === tab.toLowerCase() ? C.card : "transparent",
@@ -173,7 +190,7 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
       <div style={{ height: headerH }} />
 
       {/* Tab content */}
-      <div className="app-container" style={{ padding: "0 16px 32px" }}>
+      <div className="app-container desktop-main" style={{ padding: "0 16px 32px" }}>
         {activeTab === "quizzes" ? (
           <div key="quizzes" className="fade-in">
             {loading ? (
@@ -288,10 +305,21 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
                     </div>
                   );
                 })}
+                {/* Add quiz card — desktop (inside grid) */}
+                <button className="add-quiz-btn-desktop" onClick={() => setShowAddQuiz(true)} style={{
+                  borderRadius: 16, border: `2px dashed ${C.border}`, background: "transparent",
+                  color: C.muted, fontWeight: 700, fontSize: 14, cursor: "pointer",
+                  fontFamily: "'Nunito', sans-serif", transition: "all 0.2s",
+                  alignItems: "center", justifyContent: "center", minHeight: 180,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.accent; e.currentTarget.style.color = C.accent; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted; }}>
+                  + Add quiz
+                </button>
               </div>
             )}
-            {/* Add quiz button */}
-            <button onClick={() => setShowAddQuiz(true)} style={{
+            {/* Add quiz button — mobile (below grid) */}
+            <button className="add-quiz-btn-mobile" onClick={() => setShowAddQuiz(true)} style={{
               width: "100%", padding: "14px", borderRadius: 14, marginTop: 16,
               border: `2px dashed ${C.border}`, background: C.accentLight,
               color: C.muted, fontWeight: 700, fontSize: 14, cursor: "pointer",
