@@ -58,7 +58,7 @@ export const injectStyles = () => {
       .desktop-main { margin-left: 220px; max-width: calc(100% - 220px); }
       .desktop-header-fixed { left: 220px !important; margin-left: 0 !important; padding-left: 40px !important; padding-right: 40px !important; }
       .mobile-tab-bar { display: none !important; }
-      .app-container { max-width: 100%; padding-left: 40px !important; padding-right: 40px !important; }
+      .app-container { width: auto; max-width: 100%; padding-left: 40px !important; padding-right: 40px !important; }
       .app-header-inner { max-width: 100%; }
       .quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
       .history-list { max-width: 700px; }
