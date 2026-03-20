@@ -184,12 +184,10 @@ export default function DialogScreen({ session }) {
     >
       {/* Header */}
       <div
-        className="safe-top desktop-header-fixed"
+        className="safe-top"
         style={{
-          position: "fixed",
+          position: "sticky",
           top: 0,
-          left: 0,
-          right: 0,
           zIndex: 20,
           background: C.bg,
           padding: "16px 20px 12px",
@@ -199,7 +197,8 @@ export default function DialogScreen({ session }) {
           gap: 12,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Mobile: plain back arrow + title */}
+        <div className="quiz-home-btn" style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => navigate("/")}
             style={{
@@ -232,6 +231,25 @@ export default function DialogScreen({ session }) {
           </h1>
         </div>
 
+        {/* Desktop: styled back button + title */}
+        <div className="quiz-desktop-header" style={{ display: "none", alignItems: "center", gap: 12 }}>
+          <button onClick={() => navigate("/")} style={{
+            background: "none", border: `1.5px solid ${C.border}`, borderRadius: 10,
+            color: C.muted, cursor: "pointer", padding: "6px 8px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = C.accent; e.currentTarget.style.borderColor = C.accent; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; e.currentTarget.style.borderColor = C.border; }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <h1 style={{ fontSize: 17, fontWeight: 800, color: C.text }}>
+            {isPreCall ? "Hablar" : "Carolina"}
+          </h1>
+        </div>
+
         {/* Timer (active session only) */}
         {isActive && (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -251,13 +269,6 @@ export default function DialogScreen({ session }) {
         )}
       </div>
 
-      {/* Header spacer */}
-      <div
-        style={{
-          height: 68,
-          marginTop: "max(16px, env(safe-area-inset-top, 16px))",
-        }}
-      />
 
       {/* ============ PRE-CALL VIEW ============ */}
       {isPreCall && (
