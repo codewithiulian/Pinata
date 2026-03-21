@@ -12,6 +12,12 @@ const withPWA = withPWAInit({
       { url: "/icons/logo.png", revision: "1" },
       { url: "/icons/app-logo.png", revision: "1" },
       { url: "/images/Carolina.png", revision: "1" },
+      { url: "/pdfjs/web/viewer.html", revision: "1" },
+      { url: "/pdfjs/web/viewer.mjs", revision: "1" },
+      { url: "/pdfjs/web/viewer.css", revision: "1" },
+      { url: "/pdfjs/build/pdf.mjs", revision: "1" },
+      { url: "/pdfjs/build/pdf.worker.mjs", revision: "1" },
+      { url: "/pdfjs/build/pdf.sandbox.mjs", revision: "1" },
     ],
     runtimeCaching: [
       {

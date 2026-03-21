@@ -59,14 +59,14 @@ export default function App() {
     <>
       {pendingCount > 0 && (
         <div className="safe-top-fixed" style={{
-          position: "fixed", top: 12, left: 12, zIndex: 9999,
-          display: "flex", alignItems: "center", gap: 6,
+          position: "fixed", top: 6, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
+          display: "flex", alignItems: "center", gap: 4,
           background: "#FFFBEB", border: "1px solid #F59E0B",
-          borderRadius: 8, padding: "5px 12px", fontSize: 12,
+          borderRadius: 6, padding: "2px 8px", fontSize: 10,
           fontWeight: 700, color: "#92400E", fontFamily: "'Nunito', sans-serif",
           boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
         }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B", display: "inline-block" }} />
+          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#F59E0B", display: "inline-block" }} />
           Unsynced ({pendingCount})
         </div>
       )}
