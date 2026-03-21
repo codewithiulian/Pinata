@@ -251,7 +251,7 @@ function CarolinaHeader({ activeSessionId, title, mode, resources, starred, onTo
     resources?.length > 0 ? resources.map((r) => r.label).join(", ") : null;
 
   return (
-    <div style={{
+    <div className="safe-top" style={{
       display: "flex", alignItems: "center", gap: 12,
       padding: "12px 16px", background: "#FFFFFF",
       borderBottom: `0.5px solid ${K.bubbleBorder}`, flexShrink: 0,
