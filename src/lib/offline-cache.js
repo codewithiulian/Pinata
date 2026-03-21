@@ -73,22 +73,19 @@ export async function prefetchAll(fetchWeeksFn, fetchLessonsFn, fetchQuizzesFn) 
     await cacheWeeks(weeks);
     await cacheQuizzes(quizzes);
 
-    // Cache quiz_data for each quiz so quizzes can be taken offline
-    for (const q of quizzes) {
-      if (q.quiz_data) {
-        await cacheQuizData(q.id, q.quiz_data);
-      }
-    }
+    // Cache quiz_data in bulk
+    const quizDataEntries = quizzes
+      .filter((q) => q.quiz_data)
+      .map((q) => ({ id: q.id, data: q.quiz_data, cachedAt: Date.now() }));
+    if (quizDataEntries.length) await db.quizData.bulkPut(quizDataEntries);
 
-    // Fetch and cache lessons for every week
-    await Promise.all(
-      weeks.map(async (week) => {
-        try {
-          const lessons = await fetchLessonsFn(week.id);
-          await cacheLessons(lessons);
-        } catch { /* skip failed week */ }
-      })
-    );
+    // Fetch and cache lessons one week at a time (avoid request burst)
+    for (const week of weeks) {
+      try {
+        const lessons = await fetchLessonsFn(week.id);
+        await cacheLessons(lessons);
+      } catch { /* skip failed week */ }
+    }
   } catch (e) {
     console.warn("Offline prefetch failed:", e);
   }

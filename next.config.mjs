@@ -12,12 +12,6 @@ const withPWA = withPWAInit({
       { url: "/icons/logo.png", revision: "1" },
       { url: "/icons/app-logo.png", revision: "1" },
       { url: "/images/Carolina.png", revision: "1" },
-      { url: "/pdfjs/web/viewer.html", revision: "1" },
-      { url: "/pdfjs/web/viewer.mjs", revision: "1" },
-      { url: "/pdfjs/web/viewer.css", revision: "1" },
-      { url: "/pdfjs/build/pdf.mjs", revision: "1" },
-      { url: "/pdfjs/build/pdf.worker.mjs", revision: "1" },
-      { url: "/pdfjs/build/pdf.sandbox.mjs", revision: "1" },
     ],
     runtimeCaching: [
       {
@@ -76,6 +70,14 @@ const withPWA = withPWAInit({
           cacheName: "api-lessons",
           expiration: { maxEntries: 32, maxAgeSeconds: 60 * 60 * 24 * 7 },
           networkTimeoutSeconds: 5,
+        },
+      },
+      {
+        urlPattern: /\/pdfjs\/.*/i,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "pdfjs-assets",
+          expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
         },
       },
       {

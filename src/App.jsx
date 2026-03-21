@@ -32,14 +32,12 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync queue + offline prefetch
+  // Sync queue + deferred offline prefetch
   useEffect(() => {
     flush();
-    if (navigator.onLine) prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes);
-    const handleOnline = () => {
-      flush();
-      prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes);
-    };
+    const deferPrefetch = () => setTimeout(() => prefetchAll(fetchWeeks, fetchLessons, fetchQuizzes), 5000);
+    if (navigator.onLine) deferPrefetch();
+    const handleOnline = () => { flush(); deferPrefetch(); };
     window.addEventListener("online", handleOnline);
     return () => window.removeEventListener("online", handleOnline);
   }, []);
