@@ -23,7 +23,9 @@ export default function App() {
   useEffect(() => { injectStyles(); }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => setSession(s));
+    supabase.auth.getSession()
+      .then(({ data: { session: s } }) => setSession(s))
+      .catch(() => setSession(null));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
     return () => subscription.unsubscribe();
   }, []);
