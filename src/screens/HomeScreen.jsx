@@ -49,18 +49,27 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
             const best = Math.max(...data.map((r) => r.percentage));
             setStats({ count: data.length, avg, best });
           }
+          // Build last-score map keyed by quiz_id, with lesson_title fallback
           const scoreMap = {};
-          data.forEach((r) => { if (r.lesson_title && !scoreMap[r.lesson_title]) scoreMap[r.lesson_title] = r.percentage; });
+          data.forEach((r) => {
+            if (r.quiz_id && !scoreMap[r.quiz_id]) scoreMap[r.quiz_id] = r.percentage;
+            if (r.lesson_title && !scoreMap[`title:${r.lesson_title}`]) scoreMap[`title:${r.lesson_title}`] = r.percentage;
+          });
           setLastScores(scoreMap);
         }
         setHistoryLoading(false);
       });
-    supabase.from("quiz_progress").select("quiz_title,current_index,answers")
+    // Fetch in-progress quizzes — use quiz_id where available
+    supabase.from("quiz_progress").select("quiz_id,quiz_title,current_index,answers")
       .eq("user_id", session.user.id).eq("status", "in_progress")
       .then(({ data }) => {
         if (data) {
           const map = {};
-          data.forEach((p) => { map[p.quiz_title] = { current: (p.current_index ?? 0) + 1, answers: p.answers || {} }; });
+          data.forEach((p) => {
+            // Key by quiz_id if available, also by quiz_title for backward compat
+            if (p.quiz_id) map[p.quiz_id] = { current: (p.current_index ?? 0) + 1, answers: p.answers || {} };
+            if (p.quiz_title) map[`title:${p.quiz_title}`] = { current: (p.current_index ?? 0) + 1, answers: p.answers || {} };
+          });
           setQuizProgress(map);
         }
       });
@@ -89,7 +98,9 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
     setPullDistance(0); isPulling.current = false;
   };
 
-  const inProgressCount = Object.keys(quizProgress).length;
+  // Count in-progress (deduplicate: only count unique quiz_id entries, not title duplicates)
+  const inProgressCount = Object.keys(quizProgress).filter((k) => !k.startsWith("title:")).length
+    || Object.keys(quizProgress).filter((k) => k.startsWith("title:")).length;
 
   return (
     <div className="fade-in" onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
@@ -215,8 +226,10 @@ export default function HomeScreen({ onLoad, quizzes, loading, onDeleteQuiz, onS
                   const unit = q.data.meta?.unit;
                   const lesson = q.data.meta?.lesson;
                   const qCount = q.data.questions?.length || 0;
-                  const lastScore = lastScores[title];
-                  const progress = quizProgress[title];
+                  // Look up last score by quiz_id first, then by title
+                  const lastScore = lastScores[q.id] ?? lastScores[`title:${title}`];
+                  // Look up progress by quiz_id first, then by title
+                  const progress = quizProgress[q.id] || quizProgress[`title:${title}`];
 
                   return (
                     <div key={q.id} className="fade-in" onClick={() => onSelectQuiz(q)}

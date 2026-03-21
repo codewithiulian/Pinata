@@ -63,7 +63,7 @@ export default function DesktopSidebar({ session }) {
 
   useEffect(() => {
     if (!session?.user?.id) return;
-    supabase.from("quiz_progress").select("quiz_title")
+    supabase.from("quiz_progress").select("quiz_id")
       .eq("user_id", session.user.id).eq("status", "in_progress")
       .then(({ data }) => { if (data) setInProgressCount(data.length); });
   }, [session?.user?.id]);

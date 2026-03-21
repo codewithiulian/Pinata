@@ -71,6 +71,7 @@ export default function ResultsRoute({ session }) {
       });
   }, [session?.user?.id]);
 
+  // Teacher overrides — write using quiz_id (with quiz_title fallback)
   const overrideTimerRef = useRef(null);
   useEffect(() => {
     if (!supabaseRecordId.current || Object.keys(overrides).length === 0) return;
@@ -81,13 +82,21 @@ export default function ResultsRoute({ session }) {
         const newCorrect = results.filter((r, i) => r.correct || overrides[i]).length;
         const newPct = Math.round((newCorrect / total) * 100);
         await supabase.from("quiz_results").update({ score: newCorrect, percentage: newPct, overrides: overrideCount }).eq("id", supabaseRecordId.current);
-        if (session?.user?.id && attempt.meta?.title) {
-          await supabase.from("quiz_progress").update({ overrides }).eq("user_id", session.user.id).eq("quiz_title", attempt.meta.title);
+        if (session?.user?.id) {
+          // Update quiz_progress overrides — try by quiz_id first, then quiz_title
+          const effectiveQuizId = quizId || attempt?.quizId;
+          if (effectiveQuizId) {
+            await supabase.from("quiz_progress").update({ overrides })
+              .eq("user_id", session.user.id).eq("quiz_id", effectiveQuizId);
+          } else if (attempt?.meta?.title) {
+            await supabase.from("quiz_progress").update({ overrides })
+              .eq("user_id", session.user.id).eq("quiz_title", attempt.meta.title);
+          }
         }
       } catch (err) { console.warn("Supabase override update failed:", err); }
     }, 800);
     return () => clearTimeout(overrideTimerRef.current);
-  }, [overrides, results, total, session?.user?.id, attempt?.meta?.title]);
+  }, [overrides, results, total, session?.user?.id, quizId, attempt?.quizId, attempt?.meta?.title]);
 
   const handleOverride = (idx, value = true) => {
     setOverrides((p) => { const n = { ...p }; if (value) n[idx] = true; else delete n[idx]; return n; });

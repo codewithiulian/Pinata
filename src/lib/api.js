@@ -129,3 +129,51 @@ export async function deleteLessonPdf(lessonId) {
   if (!res.ok) throw new Error("Failed to delete PDF");
   return res.json();
 }
+
+// ── Quizzes ──
+
+export async function fetchQuizzes(filters = {}) {
+  const headers = await authHeaders();
+  const params = new URLSearchParams();
+  if (filters.lesson_id) params.set("lesson_id", filters.lesson_id);
+  if (filters.week_id) params.set("week_id", filters.week_id);
+  const qs = params.toString();
+  const res = await fetch(`/api/quizzes${qs ? `?${qs}` : ""}`, { headers });
+  if (!res.ok) throw new Error("Failed to fetch quizzes");
+  return res.json();
+}
+
+export async function createQuiz({ title, description, lesson_id, week_id, quiz_data }) {
+  const headers = await authHeaders();
+  const res = await fetch("/api/quizzes", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ title, description, lesson_id, week_id, quiz_data }),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to create quiz");
+  }
+  return res.json();
+}
+
+export async function updateQuiz(quizId, updates) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/quizzes/${quizId}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to update quiz");
+  }
+  return res.json();
+}
+
+export async function deleteQuiz(quizId) {
+  const headers = await authHeaders();
+  const res = await fetch(`/api/quizzes/${quizId}`, { method: "DELETE", headers });
+  if (!res.ok) throw new Error("Failed to delete quiz");
+  return res.json();
+}

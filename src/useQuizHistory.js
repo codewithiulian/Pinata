@@ -27,7 +27,7 @@ export function useQuizHistory(session) {
 
     const quizzesP = userId
       ? supabase
-          .from("saved_quizzes")
+          .from("quizzes")
           .select("*")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
@@ -88,24 +88,65 @@ export function useQuizHistory(session) {
       return tempId;
     }
 
+    // For the new quizzes table, we need a week_id or lesson_id.
+    // Try to resolve week_id from unit_number if provided.
+    let weekId = null;
+    if (unit != null) {
+      const { data: weekData } = await supabase
+        .from("weeks")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("week_number", unit)
+        .single();
+      if (weekData) weekId = weekData.id;
+    }
+
+    // If we couldn't resolve a week_id, use the first week as fallback
+    if (!weekId) {
+      const { data: firstWeek } = await supabase
+        .from("weeks")
+        .select("id")
+        .eq("user_id", userId)
+        .order("week_number", { ascending: true })
+        .limit(1)
+        .single();
+      if (firstWeek) weekId = firstWeek.id;
+    }
+
+    if (!weekId) {
+      // No weeks exist — fall back to offline storage
+      console.warn("No weeks found for user, storing quiz offline");
+      const offline = JSON.parse(localStorage.getItem(OFFLINE_QUIZZES_KEY) || "[]");
+      const tempId = `offline-${Date.now()}`;
+      offline.push({ id: tempId, quiz_data: data, title, unit_number: unit, lesson_number: lesson, question_count: questionCount, created_at: new Date().toISOString() });
+      localStorage.setItem(OFFLINE_QUIZZES_KEY, JSON.stringify(offline));
+      setQuizzes((prev) => [{ id: tempId, data, savedAt: Date.now() }, ...prev]);
+      return tempId;
+    }
+
     const row = {
       user_id: userId,
       title,
-      unit_number: unit,
-      lesson_number: lesson,
+      week_id: weekId,
       question_count: questionCount,
       quiz_data: data,
+      source: "upload",
     };
 
-    const { data: upserted, error } = await supabase
-      .from("saved_quizzes")
-      .upsert(row, { onConflict: "user_id,title" })
+    const { data: inserted, error } = await supabase
+      .from("quizzes")
+      .insert(row)
       .select("id")
       .single();
 
     if (error) {
       console.warn("Failed to save quiz to Supabase:", error);
-      enqueue({ table: "saved_quizzes", method: "upsert", payload: row, matchColumns: ["user_id", "title"] });
+      // Also try saving to saved_quizzes for backward compat
+      const legacyRow = {
+        user_id: userId, title, unit_number: unit,
+        lesson_number: lesson, question_count: questionCount, quiz_data: data,
+      };
+      enqueue({ table: "saved_quizzes", method: "upsert", payload: legacyRow, matchColumns: ["user_id", "title"] });
       // Fallback: offline storage
       const offline = JSON.parse(localStorage.getItem(OFFLINE_QUIZZES_KEY) || "[]");
       const tempId = `offline-${Date.now()}`;
@@ -115,7 +156,18 @@ export function useQuizHistory(session) {
       return tempId;
     }
 
-    const id = upserted.id;
+    // Also write to saved_quizzes for backward compat during transition
+    await supabase
+      .from("saved_quizzes")
+      .upsert({
+        user_id: userId, title, unit_number: unit,
+        lesson_number: lesson, question_count: questionCount, quiz_data: data,
+      }, { onConflict: "user_id,title" })
+      .then(({ error: legacyErr }) => {
+        if (legacyErr) console.warn("Legacy saved_quizzes write failed (non-critical):", legacyErr);
+      });
+
+    const id = inserted.id;
     setQuizzes((prev) => {
       const filtered = prev.filter((q) => q.id !== id);
       return [{ id, data, savedAt: Date.now() }, ...filtered];
@@ -129,8 +181,14 @@ export function useQuizHistory(session) {
       const offline = JSON.parse(localStorage.getItem(OFFLINE_QUIZZES_KEY) || "[]");
       localStorage.setItem(OFFLINE_QUIZZES_KEY, JSON.stringify(offline.filter((q) => q.id !== id)));
     } else {
-      const { error } = await supabase.from("saved_quizzes").delete().eq("id", id);
+      // Delete from new quizzes table (CASCADE handles progress/results)
+      const { error } = await supabase.from("quizzes").delete().eq("id", id);
       if (error) console.warn("Failed to delete quiz:", error);
+      // Also try to clean up from saved_quizzes
+      await supabase.from("saved_quizzes").delete().eq("id", id)
+        .then(({ error: legacyErr }) => {
+          if (legacyErr) console.warn("Legacy saved_quizzes delete failed (non-critical):", legacyErr);
+        });
     }
     setQuizzes((prev) => prev.filter((q) => q.id !== id));
   }, []);
@@ -138,7 +196,7 @@ export function useQuizHistory(session) {
   return { attempts, quizzes, loading, saveAttempt, deleteAttempt, saveQuiz, deleteQuiz, refresh };
 }
 
-/** Fetch a single quiz by Supabase UUID. Falls back to localStorage for offline quizzes. */
+/** Fetch a single quiz by UUID. Falls back to localStorage for offline quizzes. */
 export async function getQuizBySupabaseId(id) {
   // Check offline storage first for offline- prefixed IDs
   if (typeof id === "string" && id.startsWith("offline-")) {
@@ -147,14 +205,25 @@ export async function getQuizBySupabaseId(id) {
     return found ? { id: found.id, data: found.quiz_data } : null;
   }
 
-  // Fetch from Supabase
+  // Fetch from new quizzes table
   const { data, error } = await supabase
-    .from("saved_quizzes")
+    .from("quizzes")
     .select("*")
     .eq("id", id)
     .single();
 
   if (error || !data) {
+    // Fallback: try saved_quizzes (transition period)
+    const { data: legacyData, error: legacyErr } = await supabase
+      .from("saved_quizzes")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!legacyErr && legacyData) {
+      return { id: legacyData.id, data: legacyData.quiz_data };
+    }
+
     // Fallback: check offline storage and cached cloud quizzes
     const offline = JSON.parse(localStorage.getItem(OFFLINE_QUIZZES_KEY) || "[]");
     const found = offline.find((q) => q.id === id);
