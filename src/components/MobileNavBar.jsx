@@ -7,6 +7,7 @@ export default function MobileNavBar({ active }) {
 
   const activeId = active || (() => {
     if (location.pathname === "/lessons" || location.pathname.startsWith("/lesson/")) return "lessons";
+    if (location.pathname === "/vocabulary") return "vocabulary";
     if (location.pathname === "/history" || location.pathname === "/history/view") return "history";
     if (location.pathname === "/carolina") return "carolina";
     return "quizzes";
@@ -27,6 +28,14 @@ export default function MobileNavBar({ active }) {
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      ),
+    },
+    {
+      id: "vocabulary", label: "Vocab", to: "/vocabulary",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" />
         </svg>
       ),
     },

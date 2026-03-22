@@ -13,6 +13,7 @@ const K = {
 const NAV_ITEMS = [
   { id: "quizzes", label: "Quizzes", icon: "monitor" },
   { id: "lessons", label: "Lessons", icon: "bookOpen" },
+  { id: "vocabulary", label: "Vocabulary", icon: "languages" },
   { id: "history", label: "History", icon: "clock" },
 ];
 
@@ -55,6 +56,11 @@ const ICONS = {
   chatBubble: (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  languages: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" />
     </svg>
   ),
 };
@@ -154,6 +160,7 @@ export default function DesktopSidebar({ session }) {
   // Navigation helpers
   const getActiveLearnId = () => {
     if (location.pathname === "/lessons" || location.pathname.startsWith("/lesson/")) return "lessons";
+    if (location.pathname === "/vocabulary") return "vocabulary";
     if (location.pathname === "/history" || location.pathname === "/history/view") return "history";
     if (location.pathname === "/storage") return "storage";
     if (location.pathname === "/carolina" || location.pathname === "/dialog") return null;
@@ -162,6 +169,7 @@ export default function DesktopSidebar({ session }) {
 
   const handleLearnClick = (id) => {
     if (id === "lessons") navigate("/lessons");
+    else if (id === "vocabulary") navigate("/vocabulary");
     else if (id === "history") navigate("/history");
     else if (id === "storage") navigate("/storage");
     else navigate("/");
