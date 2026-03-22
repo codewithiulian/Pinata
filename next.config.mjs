@@ -77,7 +77,7 @@ const withPWA = withPWAInit({
         handler: "CacheFirst",
         options: {
           cacheName: "pdfjs-assets",
-          expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+          expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 },
         },
       },
       {
