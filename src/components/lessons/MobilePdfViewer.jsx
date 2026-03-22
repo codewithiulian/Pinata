@@ -7,9 +7,23 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function touchDist(a, b) {
-  const dx = a.clientX - b.clientX, dy = a.clientY - b.clientY;
-  return Math.sqrt(dx * dx + dy * dy);
+const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3];
+const MIN_ZOOM = ZOOM_STEPS[0];
+const MAX_ZOOM = ZOOM_STEPS[ZOOM_STEPS.length - 1];
+
+function ZoomBtn({ onClick, disabled, children }) {
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      width: 32, height: 28, display: "flex", alignItems: "center", justifyContent: "center",
+      background: disabled ? C.bg : C.card, border: `1px solid ${C.border}`,
+      borderRadius: 6, cursor: disabled ? "default" : "pointer",
+      color: disabled ? C.border : C.text, fontSize: 16, fontWeight: 700,
+      fontFamily: "'Nunito', sans-serif", opacity: disabled ? 0.5 : 1,
+      WebkitTapHighlightColor: "transparent",
+    }}>
+      {children}
+    </button>
+  );
 }
 
 export default function MobilePdfViewer({ blob, fileName, fileSize, isCached, onClose }) {
@@ -24,8 +38,53 @@ export default function MobilePdfViewer({ blob, fileName, fileSize, isCached, on
   const [contentH, setContentH] = useState(0);
   const pdfDocRef = useRef(null);
   const pageOffsetsRef = useRef([]);
-  const pinch = useRef({ active: false, dist: 0, baseScale: 1, live: 1 });
-  const lastTap = useRef(0);
+
+  // --- Zoom helpers ---
+  const applyZoom = useCallback((newScale) => {
+    const content = contentRef.current;
+    const scroll = scrollRef.current;
+    if (!content || !scroll) return;
+
+    const containerW = scroll.clientWidth || window.innerWidth;
+    content.style.transform = `scale(${newScale})`;
+    content.parentElement.style.height = `${contentH * newScale}px`;
+    content.parentElement.style.width = `${containerW * newScale}px`;
+  }, [contentH]);
+
+  const zoomTo = useCallback((newScale) => {
+    const scroll = scrollRef.current;
+    if (!scroll) return;
+
+    const oldScale = scale;
+    const viewportW = scroll.clientWidth;
+    const viewportH = scroll.clientHeight;
+
+    // Zoom centered on the current viewport center
+    const centerX = (scroll.scrollLeft + viewportW / 2) / oldScale;
+    const centerY = (scroll.scrollTop + viewportH / 2) / oldScale;
+
+    applyZoom(newScale);
+    setScale(newScale);
+
+    scroll.scrollLeft = centerX * newScale - viewportW / 2;
+    scroll.scrollTop = centerY * newScale - viewportH / 2;
+  }, [scale, applyZoom]);
+
+  const zoomIn = useCallback(() => {
+    const next = ZOOM_STEPS.find(s => s > scale + 0.01);
+    if (next) zoomTo(next);
+  }, [scale, zoomTo]);
+
+  const zoomOut = useCallback(() => {
+    const prev = [...ZOOM_STEPS].reverse().find(s => s < scale - 0.01);
+    if (prev) zoomTo(prev);
+  }, [scale, zoomTo]);
+
+  const zoomReset = useCallback(() => {
+    applyZoom(1);
+    setScale(1);
+    if (scrollRef.current) scrollRef.current.scrollLeft = 0;
+  }, [applyZoom]);
 
   // --- Render PDF pages ---
   useEffect(() => {
@@ -95,110 +154,17 @@ export default function MobilePdfViewer({ blob, fileName, fileSize, isCached, on
     };
   }, [blob]);
 
-  // --- Pinch-to-zoom (direct DOM for smoothness) ---
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    function applyScale(newScale) {
-      const content = contentRef.current;
-      if (!content) return;
-      content.style.transform = `scale(${newScale})`;
-      content.parentElement.style.height = `${contentH * newScale}px`;
-      content.parentElement.style.width = `${(scrollRef.current?.clientWidth || window.innerWidth) * newScale}px`;
-    }
-
-    function onTouchStart(e) {
-      if (e.touches.length === 2) {
-        pinch.current = { active: true, dist: touchDist(e.touches[0], e.touches[1]), baseScale: pinch.current.live, live: pinch.current.live };
-      }
-      // Double-tap
-      if (e.touches.length === 1) {
-        const now = Date.now();
-        if (now - lastTap.current < 300) {
-          e.preventDefault();
-          const rect = el.getBoundingClientRect();
-          const tx = e.touches[0].clientX - rect.left;
-          const ty = e.touches[0].clientY - rect.top;
-          const curScale = pinch.current.live;
-
-          if (curScale > 1.1) {
-            // Reset to 1x
-            pinch.current.live = 1;
-            applyScale(1);
-            setScale(1);
-            el.scrollLeft = 0;
-          } else {
-            // Zoom to 2.5x centered on tap
-            const newScale = 2.5;
-            const cX = (tx + el.scrollLeft) / curScale;
-            const cY = (ty + el.scrollTop) / curScale;
-            pinch.current.live = newScale;
-            applyScale(newScale);
-            setScale(newScale);
-            el.scrollLeft = cX * newScale - tx;
-            el.scrollTop = cY * newScale - ty;
-          }
-          lastTap.current = 0;
-          return;
-        }
-        lastTap.current = now;
-      }
-    }
-
-    function onTouchMove(e) {
-      if (!pinch.current.active || e.touches.length < 2) return;
-      e.preventDefault();
-      const newDist = touchDist(e.touches[0], e.touches[1]);
-      const ratio = newDist / pinch.current.dist;
-      const newScale = Math.min(Math.max(pinch.current.baseScale * ratio, 1), 5);
-
-      // Keep pinch center stationary
-      const rect = el.getBoundingClientRect();
-      const cx = ((e.touches[0].clientX + e.touches[1].clientX) / 2) - rect.left;
-      const cy = ((e.touches[0].clientY + e.touches[1].clientY) / 2) - rect.top;
-      const oldScale = pinch.current.live;
-
-      applyScale(newScale);
-
-      el.scrollLeft = (el.scrollLeft + cx) * (newScale / oldScale) - cx;
-      el.scrollTop = (el.scrollTop + cy) * (newScale / oldScale) - cy;
-
-      pinch.current.live = newScale;
-    }
-
-    function onTouchEnd() {
-      if (pinch.current.active) {
-        pinch.current.active = false;
-        const final = pinch.current.live < 1.05 ? 1 : pinch.current.live;
-        pinch.current.live = final;
-        applyScale(final);
-        setScale(final);
-      }
-    }
-
-    el.addEventListener("touchstart", onTouchStart, { passive: false });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [contentH]);
-
   // --- Track current page on scroll ---
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el || !pageOffsetsRef.current.length) return;
     const scrollTop = el.scrollTop;
-    const s = pinch.current.live || 1;
     let page = 1;
     for (let i = 0; i < pageOffsetsRef.current.length; i++) {
-      if (scrollTop >= pageOffsetsRef.current[i] * s - 80) page = i + 1;
+      if (scrollTop >= pageOffsetsRef.current[i] * scale - 80) page = i + 1;
     }
     setCurrentPage(page);
-  }, []);
+  }, [scale]);
 
   return (
     <div style={{
@@ -253,35 +219,37 @@ export default function MobilePdfViewer({ blob, fileName, fileSize, isCached, on
         <div style={{ width: 50, flexShrink: 0 }} />
       </div>
 
-      {/* Toolbar: page indicator + zoom reset */}
+      {/* Toolbar: page indicator + zoom controls */}
       {!loading && total > 0 && (
         <div style={{
-          padding: "6px 16px", background: C.bg, flexShrink: 0,
+          padding: "6px 12px", background: C.bg, flexShrink: 0,
           display: "flex", justifyContent: "space-between", alignItems: "center",
           borderBottom: `1px solid ${C.border}`,
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>
             {rendered < total ? `Rendering... ${rendered}/${total}` : `Page ${currentPage} of ${total}`}
           </div>
-          {scale > 1.05 && (
-            <button onClick={() => {
-              pinch.current.live = 1;
-              const content = contentRef.current;
-              if (content) {
-                content.style.transform = "scale(1)";
-                content.parentElement.style.height = `${contentH}px`;
-                content.parentElement.style.width = "100%";
-              }
-              if (scrollRef.current) scrollRef.current.scrollLeft = 0;
-              setScale(1);
-            }} style={{
-              fontSize: 11, fontWeight: 700, color: C.accent, background: C.accentLight,
-              border: "none", borderRadius: 6, padding: "2px 8px", cursor: "pointer",
-              fontFamily: "'Nunito', sans-serif",
+
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {scale !== 1 && (
+              <button onClick={zoomReset} style={{
+                fontSize: 11, fontWeight: 700, color: C.accent, background: C.accentLight,
+                border: "none", borderRadius: 6, padding: "4px 8px", cursor: "pointer",
+                fontFamily: "'Nunito', sans-serif", marginRight: 4,
+                WebkitTapHighlightColor: "transparent",
+              }}>
+                Reset
+              </button>
+            )}
+            <ZoomBtn onClick={zoomOut} disabled={scale <= MIN_ZOOM}>−</ZoomBtn>
+            <span style={{
+              fontSize: 12, fontWeight: 700, color: C.text,
+              minWidth: 40, textAlign: "center", userSelect: "none",
             }}>
-              {Math.round(scale * 100)}% — Reset
-            </button>
-          )}
+              {Math.round(scale * 100)}%
+            </span>
+            <ZoomBtn onClick={zoomIn} disabled={scale >= MAX_ZOOM}>+</ZoomBtn>
+          </div>
         </div>
       )}
 
@@ -302,7 +270,7 @@ export default function MobilePdfViewer({ blob, fileName, fileSize, isCached, on
         </div>
       )}
 
-      {/* Scrollable + zoomable PDF */}
+      {/* Scrollable PDF — pinch zoom disabled, use toolbar controls */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
