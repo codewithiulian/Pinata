@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { C } from "../styles/theme";
-import { fetchWeeks, createWeek, deleteWeek as apiDeleteWeek, createLesson, deleteLesson as apiDeleteLesson, fetchQuizzes } from "../lib/api";
+import {
+  fetchWeeks, createWeek, deleteWeek as apiDeleteWeek,
+  createLesson, deleteLesson as apiDeleteLesson,
+  fetchQuizzes, uploadLessonPdf,
+} from "../lib/api";
 import WeekCard from "../components/lessons/WeekCard";
-import LessonSearch from "../components/lessons/LessonSearch";
 import AddWeekModal from "../components/lessons/AddWeekModal";
 import AddLessonModal from "../components/lessons/AddLessonModal";
 import AddQuizModal from "../components/quizzes/AddQuizModal";
@@ -12,132 +15,144 @@ import MobileNavBar from "../components/MobileNavBar";
 
 export default function LessonsScreen({ session }) {
   const navigate = useNavigate();
-  const [gearHover, setGearHover] = useState(false);
   const [weeks, setWeeks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedWeeks, setExpandedWeeks] = useState(new Set());
-  const [refreshKeys, setRefreshKeys] = useState({}); // { weekId: counter } to trigger lesson re-fetch
+  const [refreshKeys, setRefreshKeys] = useState({});
   const [showAddWeek, setShowAddWeek] = useState(false);
   const [addLessonWeek, setAddLessonWeek] = useState(null);
-  const [searchActive, setSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [headerH, setHeaderH] = useState(0);
   const [quizCounts, setQuizCounts] = useState({ perLesson: {}, weekTotal: {} });
-  const [addQuizWeek, setAddQuizWeek] = useState(null); // week object for unit quiz modal
+  const [addQuizWeek, setAddQuizWeek] = useState(null);
+  const [addQuizLesson, setAddQuizLesson] = useState(null);
+  const [activeUnit, setActiveUnit] = useState(0);
+  const [fabMenuOpen, setFabMenuOpen] = useState(false);
 
-  const roRef = useRef(null);
-  const headerCallbackRef = (el) => {
-    if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
-    if (!el) return;
-    const ro = new ResizeObserver(([e]) => setHeaderH(e.contentRect.height + parseFloat(getComputedStyle(e.target).paddingTop) + parseFloat(getComputedStyle(e.target).paddingBottom)));
-    ro.observe(el);
-    roRef.current = ro;
-  };
+  const unitRefs = useRef({});
+  const uploadRef = useRef(null);
+  const uploadTargetRef = useRef(null);
+  const preSearchRef = useRef(null);
 
   useEffect(() => { loadWeeks(); loadQuizCounts(); }, []);
 
-  const loadWeeks = async () => {
-    try {
-      const data = await fetchWeeks();
-      setWeeks(data);
-    } catch (e) {
-      console.error("Failed to load weeks:", e);
-    } finally {
-      setLoading(false);
+  // Default: expand first unit once weeks load
+  useEffect(() => {
+    if (weeks.length > 0 && expandedWeeks.size === 0 && !loading) {
+      setExpandedWeeks(new Set([weeks[0].id]));
     }
+  }, [weeks, loading]);
+
+  // Search: expand all units, restore on clear
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      if (!preSearchRef.current) preSearchRef.current = new Set(expandedWeeks);
+      setExpandedWeeks(new Set(weeks.map(w => w.id)));
+    } else if (preSearchRef.current) {
+      setExpandedWeeks(preSearchRef.current);
+      preSearchRef.current = null;
+    }
+  }, [searchQuery]);
+
+  // Intersection observer: track which unit is in view for pill nav
+  useEffect(() => {
+    if (!weeks.length) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const idx = weeks.findIndex(w => w.id === entry.target.dataset.weekId);
+            if (idx >= 0) setActiveUnit(idx);
+          }
+        }
+      },
+      { rootMargin: "-80px 0px -60% 0px" }
+    );
+    weeks.forEach(w => {
+      const el = unitRefs.current[w.id];
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, [weeks]);
+
+  /* ── data fetching (unchanged) ── */
+
+  const loadWeeks = async () => {
+    try { setWeeks(await fetchWeeks()); }
+    catch (e) { console.error("Failed to load weeks:", e); }
+    finally { setLoading(false); }
   };
 
   const loadQuizCounts = async () => {
     try {
       const quizzes = await fetchQuizzes();
-      const perLesson = {};
-      const weekTotal = {};
-      quizzes.forEach((q) => {
+      const perLesson = {}, weekTotal = {};
+      quizzes.forEach(q => {
         if (q.lesson_id) {
           perLesson[q.lesson_id] = (perLesson[q.lesson_id] || 0) + 1;
-          // Also count toward the parent week total
           const weekId = q.lesson?.week_id;
           if (weekId) weekTotal[weekId] = (weekTotal[weekId] || 0) + 1;
         }
-        if (q.week_id) {
-          weekTotal[q.week_id] = (weekTotal[q.week_id] || 0) + 1;
-        }
+        if (q.week_id) weekTotal[q.week_id] = (weekTotal[q.week_id] || 0) + 1;
       });
       setQuizCounts({ perLesson, weekTotal });
-    } catch (e) {
-      console.error("Failed to load quiz counts:", e);
-    }
+    } catch (e) { console.error("Failed to load quiz counts:", e); }
   };
 
-  const bumpRefreshKey = (weekId) => {
-    setRefreshKeys((prev) => ({ ...prev, [weekId]: (prev[weekId] || 0) + 1 }));
-  };
+  const bumpRefreshKey = (weekId) =>
+    setRefreshKeys(prev => ({ ...prev, [weekId]: (prev[weekId] || 0) + 1 }));
 
   const nextWeekNumber = useMemo(() => {
-    if (weeks.length === 0) return 1;
-    return Math.max(...weeks.map((w) => w.week_number)) + 1;
+    if (!weeks.length) return 1;
+    return Math.max(...weeks.map(w => w.week_number)) + 1;
   }, [weeks]);
 
-  const toggleWeek = (weekId) => {
-    setExpandedWeeks((prev) => {
+  /* ── handlers (unchanged) ── */
+
+  const toggleWeek = (weekId) =>
+    setExpandedWeeks(prev => {
       const next = new Set(prev);
-      if (next.has(weekId)) next.delete(weekId);
-      else next.add(weekId);
+      next.has(weekId) ? next.delete(weekId) : next.add(weekId);
       return next;
     });
-  };
 
   const handleCreateWeek = async (weekNumber, title) => {
     await createWeek(weekNumber, title);
     await loadWeeks();
   };
 
-  const handleDeleteWeek = (week) => {
+  const handleDeleteWeek = (week) =>
     setDeleteConfirm({
-      type: "week",
-      item: week,
-      title: "Delete week?",
-      message: `Delete Week ${week.week_number} and all its lessons? This cannot be undone.`,
+      type: "week", item: week,
+      title: "Delete unit?",
+      message: `Delete Unit ${week.week_number} and all its lessons? This cannot be undone.`,
     });
-  };
 
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
     try {
       if (deleteConfirm.type === "week") {
         await apiDeleteWeek(deleteConfirm.item.id);
-        setExpandedWeeks((prev) => {
-          const next = new Set(prev);
-          next.delete(deleteConfirm.item.id);
-          return next;
-        });
-        await loadWeeks();
-        loadQuizCounts();
+        setExpandedWeeks(prev => { const n = new Set(prev); n.delete(deleteConfirm.item.id); return n; });
+        await loadWeeks(); loadQuizCounts();
       } else {
         await apiDeleteLesson(deleteConfirm.item.id);
-        const weekId = deleteConfirm.item._weekId;
-        if (weekId) bumpRefreshKey(weekId);
-        await loadWeeks();
-        loadQuizCounts();
+        if (deleteConfirm.item._weekId) bumpRefreshKey(deleteConfirm.item._weekId);
+        await loadWeeks(); loadQuizCounts();
       }
-    } catch (e) {
-      console.error("Delete failed:", e);
-    }
+    } catch (e) { console.error("Delete failed:", e); }
     setDeleteConfirm(null);
   };
 
-  const handleDeleteLesson = (lesson, weekId) => {
+  const handleDeleteLesson = (lesson, weekId) =>
     setDeleteConfirm({
       type: "lesson",
       item: { ...lesson, _weekId: weekId },
       title: "Delete lesson?",
       message: `Delete "${lesson.title}"? This cannot be undone.`,
     });
-  };
 
-  const handleSelectLesson = (lesson, week) => {
-    navigate(`/lesson/${lesson.id}`);
-  };
+  const handleSelectLesson = (lesson) => navigate(`/lesson/${lesson.id}`);
 
   const handleAddLesson = async (title, markdownContent) => {
     if (!addLessonWeek) return;
@@ -146,149 +161,240 @@ export default function LessonsScreen({ session }) {
     await loadWeeks();
   };
 
-  const handleSearchSelect = (result) => {
-    navigate(`/lesson/${result.id}`);
+  const handleUploadPdf = (lesson, weekId) => {
+    uploadTargetRef.current = { lessonId: lesson.id, weekId };
+    uploadRef.current?.click();
   };
 
-  const handleAddUnitQuiz = (week) => {
-    setAddQuizWeek(week);
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    const target = uploadTargetRef.current;
+    if (!file || !target) return;
+    try {
+      await uploadLessonPdf(target.lessonId, file, () => {}, () => {});
+      bumpRefreshKey(target.weekId);
+    } catch (err) { console.error("Upload failed:", err); }
+    uploadTargetRef.current = null;
+    e.target.value = "";
   };
 
-  const handleQuizAdded = () => {
-    loadQuizCounts();
+  const handleQuizAdded = () => loadQuizCounts();
+
+  const scrollToUnit = (index) => {
+    setActiveUnit(index);
+    const el = unitRefs.current[weeks[index]?.id];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  /* ── computed ── */
+
+  const totalLessons = weeks.reduce((s, w) => s + (w.lesson_count || 0), 0);
+  const totalQuizzes = Object.values(quizCounts.weekTotal).reduce((s, v) => s + v, 0);
+
+  /* ── render ── */
 
   return (
     <div className="fade-in" style={{ minHeight: "100vh", background: C.bg }}>
-      {/* Fixed header */}
-      <div ref={headerCallbackRef} className="safe-top desktop-main desktop-header-fixed" style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 20,
-        background: C.bg, padding: "16px 20px 0",
-      }}>
-        <div className="app-header-inner">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-            <div>
-              <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, lineHeight: 1.3 }}>Lessons</h1>
-              <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 2 }}>Browse and manage your lessons</p>
-            </div>
-            <button
-              className="settings-cog-mobile"
-              onClick={() => navigate("/storage")}
-              onMouseEnter={() => setGearHover(true)}
-              onMouseLeave={() => setGearHover(false)}
-              style={{
-                width: 36, height: 36, borderRadius: 12,
-                border: `1.5px solid ${gearHover ? C.accent : C.border}`,
-                background: C.card, cursor: "pointer",
-                alignItems: "center", justifyContent: "center",
-                transition: "border-color 0.15s",
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={gearHover ? C.accent : C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transition: "stroke 0.15s" }}>
-                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </button>
-          </div>
+      <div className="safe-top desktop-main lessons-page">
 
+        {/* ─── Title ─── */}
+        <div style={{ paddingTop: 16, marginBottom: 16 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 900, color: C.text, lineHeight: 1.2, fontFamily: "'Nunito', sans-serif" }}>
+            Lessons
+          </h1>
+          <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, marginTop: 4 }}>
+            {weeks.length} unit{weeks.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
+            {totalQuizzes > 0 && <> · {totalQuizzes} quiz{totalQuizzes !== 1 ? "zes" : ""}</>}
+          </p>
         </div>
-      </div>
 
-      {/* Spacer for fixed header */}
-      <div style={{ height: headerH }} />
-
-      {/* Content */}
-      <div className="app-container desktop-main" style={{ padding: "0 16px 96px" }}>
-        {/* Search bar + New Week button row */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
-          <div style={{ flex: 1 }}>
-            <LessonSearch onSelectResult={handleSearchSelect} onActiveChange={setSearchActive} />
+        {/* ─── Toolbar ─── */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          {/* Search input */}
+          <div style={{
+            flex: 1, display: "flex", alignItems: "center", gap: 8,
+            background: C.card, border: `1.5px solid ${C.border}`,
+            borderRadius: 12, padding: "10px 14px",
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text" value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search lessons..."
+              style={{
+                flex: 1, border: "none", outline: "none", background: "transparent",
+                fontSize: 14, fontWeight: 600, color: C.text, fontFamily: "'Nunito', sans-serif",
+              }}
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} style={{
+                background: "none", border: "none", color: C.muted,
+                cursor: "pointer", padding: 0, fontSize: 18, lineHeight: 1,
+              }}>×</button>
+            )}
           </div>
-          <button className="new-week-btn-desktop" onClick={() => setShowAddWeek(true)} style={{
+
+          {/* Batch upload — desktop only, placeholder */}
+          <button className="batch-upload-v2" disabled style={{
+            display: "none", alignItems: "center", gap: 6,
+            padding: "10px 16px", borderRadius: 12,
+            border: `1.5px solid ${C.border}`, background: C.card,
+            color: C.text, fontWeight: 700, fontSize: 14,
+            cursor: "not-allowed", fontFamily: "'Nunito', sans-serif",
+            opacity: 0.6, whiteSpace: "nowrap", flexShrink: 0,
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Batch upload
+          </button>
+
+          {/* + New unit — desktop only */}
+          <button className="toolbar-newunit-v2" onClick={() => setShowAddWeek(true)} style={{
             display: "none", alignItems: "center", gap: 6,
             padding: "10px 18px", borderRadius: 12, border: "none",
             background: C.accent, color: "#fff", fontWeight: 800, fontSize: 14,
             cursor: "pointer", fontFamily: "'Nunito', sans-serif",
-            whiteSpace: "nowrap", transition: "filter 0.15s", flexShrink: 0,
+            whiteSpace: "nowrap", flexShrink: 0, transition: "filter 0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.08)")}
-          onMouseLeave={(e) => (e.currentTarget.style.filter = "none")}>
+          onMouseEnter={e => (e.currentTarget.style.filter = "brightness(1.08)")}
+          onMouseLeave={e => (e.currentTarget.style.filter = "none")}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            New week
+            New unit
           </button>
         </div>
 
-        {/* Accordion list of weeks (hidden when search is active) */}
-        {!searchActive && (
-          <div>
-            {loading ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="skeleton skeleton-glow" style={{ height: 80, borderRadius: 16 }} />
-                ))}
-              </div>
-            ) : weeks.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "48px 20px" }}>
-                <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.8 }}>📖</div>
-                <p style={{ color: C.text, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>No weeks yet</p>
-                <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>
-                  Create your first week to start adding lessons!
-                </p>
-              </div>
-            ) : (
-              <div className="lessons-accordion" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {weeks.map((week) => (
+        {/* ─── Sticky pill nav ─── */}
+        {weeks.length > 0 && (
+          <div style={{ position: "sticky", top: 0, zIndex: 10, background: C.bg, padding: "6px 0 10px" }}>
+            <div className="unit-pill-nav">
+              {weeks.map((w, i) => (
+                <button key={w.id} onClick={() => scrollToUnit(i)} style={{
+                  padding: "6px 14px", borderRadius: 20,
+                  border: `1.5px solid ${activeUnit === i ? C.accent : C.border}`,
+                  background: activeUnit === i ? C.accentLight : C.card,
+                  color: activeUnit === i ? C.accent : C.muted,
+                  fontWeight: activeUnit === i ? 800 : 700,
+                  fontSize: 13, cursor: "pointer", fontFamily: "'Nunito', sans-serif",
+                  whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s",
+                }}>
+                  Unit {w.week_number}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Unit sections ─── */}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+            {[1, 2, 3].map(i => (
+              <div key={i} className="skeleton skeleton-glow" style={{ height: 72, borderRadius: 14 }} />
+            ))}
+          </div>
+        ) : weeks.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "48px 20px" }}>
+            <p style={{ color: C.text, fontSize: 18, fontWeight: 800, marginBottom: 4 }}>No units yet</p>
+            <p style={{ color: C.muted, fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>
+              Create your first unit to start adding lessons!
+            </p>
+          </div>
+        ) : (
+          <div style={{ marginTop: 4 }}>
+            {weeks.map((week, i) => (
+              <div key={week.id}>
+                {i > 0 && !searchQuery.trim() && <div className="unit-divider-band" />}
+                <div
+                  ref={el => { unitRefs.current[week.id] = el; }}
+                  data-week-id={week.id}
+                  style={{ scrollMarginTop: 48 }}
+                >
                   <WeekCard
-                    key={week.id}
                     week={week}
                     expanded={expandedWeeks.has(week.id)}
                     refreshKey={refreshKeys[week.id] || 0}
+                    searchQuery={searchQuery}
                     onToggle={() => toggleWeek(week.id)}
-                    onSelectLesson={(lesson) => handleSelectLesson(lesson, week)}
+                    onSelectLesson={handleSelectLesson}
                     onAddLesson={() => {
                       setAddLessonWeek(week);
-                      setExpandedWeeks((prev) => new Set([...prev, week.id]));
+                      setExpandedWeeks(prev => new Set([...prev, week.id]));
                     }}
-                    onDeleteLesson={(lesson) => handleDeleteLesson(lesson, week.id)}
+                    onDeleteLesson={l => handleDeleteLesson(l, week.id)}
                     onDeleteWeek={handleDeleteWeek}
+                    onUploadPdf={l => handleUploadPdf(l, week.id)}
+                    onAddQuizLesson={l => setAddQuizLesson(l)}
                     quizCounts={quizCounts}
-                    onAddUnitQuiz={handleAddUnitQuiz}
+                    onAddUnitQuiz={() => setAddQuizWeek(week)}
                   />
-                ))}
+                </div>
               </div>
-            )}
-
-            {/* Bottom helper text (mobile only) */}
-            {weeks.length > 0 && (
-              <p className="lessons-footer-text" style={{
-                textAlign: "center", color: C.muted, fontSize: 12, fontWeight: 600,
-                marginTop: 24, padding: "0 20px",
-              }}>
-                All weeks collapsed · tap a week to expand · FAB adds new week
-              </p>
-            )}
+            ))}
           </div>
         )}
       </div>
 
-      {/* Mobile FAB for new week (hidden on desktop via CSS) */}
-      <button className="fab-new-week" onClick={() => setShowAddWeek(true)} style={{
-        position: "fixed", bottom: 80, right: 24, width: 56, height: 56,
-        borderRadius: "50%", border: "none", background: C.accent,
-        color: "#fff", fontSize: 28, fontWeight: 300, cursor: "pointer",
-        boxShadow: "0 4px 16px rgba(0,180,160,0.3)", zIndex: 15,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        transition: "transform 0.15s, box-shadow 0.15s",
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.06)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,180,160,0.4)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,180,160,0.3)"; }}>
-        +
-      </button>
+      {/* Hidden PDF upload input */}
+      <input ref={uploadRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={handleFileSelected} />
+
+      {/* ─── Mobile FAB ─── */}
+      <div className="fab-new-week" style={{ position: "fixed", bottom: 80, right: 24, zIndex: 15 }}>
+        {fabMenuOpen && (
+          <>
+            <div style={{ position: "fixed", inset: 0, zIndex: -1 }} onClick={() => setFabMenuOpen(false)} />
+            <div style={{
+              position: "absolute", bottom: 64, right: 0,
+              background: C.card, borderRadius: 14, padding: 6,
+              boxShadow: "0 4px 20px rgba(0,60,50,0.15)",
+              border: `1px solid ${C.border}`, minWidth: 160,
+              animation: "slideUp 0.15s ease-out",
+            }}>
+              <button onClick={() => { setFabMenuOpen(false); setShowAddWeek(true); }} style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%",
+                padding: "10px 14px", border: "none", background: "transparent",
+                color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
+                fontFamily: "'Nunito', sans-serif", borderRadius: 10, textAlign: "left",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                New unit
+              </button>
+              <button onClick={() => {
+                setFabMenuOpen(false);
+                if (weeks.length) {
+                  const expandedId = [...expandedWeeks][0] || weeks[0].id;
+                  setAddLessonWeek(weeks.find(w => w.id === expandedId) || weeks[0]);
+                }
+              }} style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%",
+                padding: "10px 14px", border: "none", background: "transparent",
+                color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer",
+                fontFamily: "'Nunito', sans-serif", borderRadius: 10, textAlign: "left",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = C.accentLight)}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                New lesson
+              </button>
+            </div>
+          </>
+        )}
+        <button onClick={() => setFabMenuOpen(f => !f)} style={{
+          width: 56, height: 56, borderRadius: "50%", border: "none",
+          background: C.accent, color: "#fff", fontSize: 28, fontWeight: 300,
+          cursor: "pointer", boxShadow: "0 4px 16px rgba(0,180,160,0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "transform 0.2s", transform: fabMenuOpen ? "rotate(45deg)" : "none",
+        }}>+</button>
+      </div>
 
       <MobileNavBar active="lessons" />
 
-      {/* Modals */}
+      {/* ─── Modals ─── */}
       <AddWeekModal
         open={showAddWeek}
         onClose={() => setShowAddWeek(false)}
@@ -300,31 +406,28 @@ export default function LessonsScreen({ session }) {
         open={addLessonWeek !== null}
         onClose={() => setAddLessonWeek(null)}
         onCreate={handleAddLesson}
-        weekLabel={addLessonWeek ? `Week ${addLessonWeek.week_number} · ${addLessonWeek.title || `Week ${addLessonWeek.week_number}`}` : ""}
+        weekLabel={addLessonWeek ? `Unit ${addLessonWeek.week_number} · ${addLessonWeek.title || `Unit ${addLessonWeek.week_number}`}` : ""}
       />
 
       {addQuizWeek && (
         <AddQuizModal
-          open={true}
-          onClose={() => setAddQuizWeek(null)}
-          onSuccess={handleQuizAdded}
-          context={{
-            type: "week",
-            weekId: addQuizWeek.id,
-            weekTitle: `Unit #${addQuizWeek.week_number}: ${addQuizWeek.title || `Week ${addQuizWeek.week_number}`}`,
-          }}
+          open onClose={() => setAddQuizWeek(null)} onSuccess={handleQuizAdded}
+          context={{ type: "week", weekId: addQuizWeek.id, weekTitle: `Unit ${addQuizWeek.week_number}: ${addQuizWeek.title || `Unit ${addQuizWeek.week_number}`}` }}
+        />
+      )}
+
+      {addQuizLesson && (
+        <AddQuizModal
+          open onClose={() => setAddQuizLesson(null)} onSuccess={handleQuizAdded}
+          context={{ type: "lesson", lessonId: addQuizLesson.id, lessonTitle: addQuizLesson.title }}
         />
       )}
 
       <ConfirmModal
         open={deleteConfirm !== null}
-        title={deleteConfirm?.title || ""}
-        message={deleteConfirm?.message || ""}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        destructive
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirm(null)}
+        title={deleteConfirm?.title || ""} message={deleteConfirm?.message || ""}
+        confirmLabel="Delete" cancelLabel="Cancel" destructive
+        onConfirm={confirmDelete} onCancel={() => setDeleteConfirm(null)}
       />
     </div>
   );
