@@ -11,6 +11,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ClientMessage, ServerMessage } from "./types.ts";
 import { STT_PATH } from "./types.ts";
 import { buildBrainSystem, CONTINUITY_HINT } from "./prompt.ts";
+import {
+  CAROLINA_VOICE_DEFAULTS,
+  sanitiseCarolinaVoiceConfig,
+  type CarolinaVoiceConfig,
+} from "./carolina-voice-config.ts";
 
 const EMPTY_TURN_NUDGE =
   "(El usuario no dijo nada. Continúa la conversación con una pregunta o un comentario breve.)";
@@ -19,17 +24,11 @@ const GREET_TRIGGER = "Hola, Carolina.";
 loadEnv();
 
 const port = Number(process.env.PORT) || 3100;
-const BRAIN_MODEL = process.env.ANTHROPIC_BRAIN_MODEL || "claude-opus-4-7";
-const REFLEX_MODEL =
-  process.env.ANTHROPIC_REFLEX_MODEL || "claude-haiku-4-5-20251001";
-const ELEVENLABS_MODEL = "eleven_flash_v2_5";
+// Brain / reflex / TTS model + voice + speed + reflex toggle live per-user in
+// Supabase (table `user_carolina_voice`, RLS-gated). Fetched once on WS auth.
+// Fly secrets no longer carry these; defaults below cover first-time users.
 const HISTORY_CAP = 20;
 const REFLEX_GATE_MS = 1500;
-const reflexEnabled = () => process.env.DISABLE_REFLEX !== "1";
-const ttsSpeed = () => {
-  const n = Number(process.env.ELEVENLABS_SPEED);
-  return Number.isFinite(n) && n > 0 ? Math.min(1.2, Math.max(0.7, n)) : 1.0;
-};
 
 const REFLEX_PROMPT = `You generate ONE very short Spanish filler/acknowledgment to buy thinking time.
 Output 1-4 words only. Examples:
@@ -47,22 +46,46 @@ const allowedOrigins = (process.env.CAROLINA2_ALLOWED_ORIGIN || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 const supabase =
-  process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY
-    ? createSupabase(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_ANON_KEY,
-      )
+  SUPABASE_URL && SUPABASE_ANON_KEY
+    ? createSupabase(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
 
-async function verifyToken(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
-  if (!supabase) return false; // misconfigured sidecar → fail closed
+// Verifies the WS-supplied JWT and returns the authenticated user id, or null
+// on any failure (misconfig / bad token / Supabase error). Fail-closed.
+async function verifyToken(token: string | undefined): Promise<string | null> {
+  if (!token) return null;
+  if (!supabase) return null;
   try {
     const { data, error } = await supabase.auth.getUser(token);
-    return !error && !!data?.user;
+    if (error || !data?.user) return null;
+    return data.user.id;
   } catch {
-    return false;
+    return null;
+  }
+}
+
+// Fetches the user's carolina-voice config row using the same JWT they
+// authenticated with. RLS enforces that they only ever see their own row.
+// Any missing column / failed read falls back to CAROLINA_VOICE_DEFAULTS;
+// every value is re-validated before use to neutralise a tampered row.
+async function fetchVoiceConfig(token: string): Promise<CarolinaVoiceConfig> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return { ...CAROLINA_VOICE_DEFAULTS };
+  }
+  try {
+    const userClient = createSupabase(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+    const { data } = await userClient
+      .from("user_carolina_voice")
+      .select("voice_id, brain_model, reflex_model, tts_model, speed, disable_reflex")
+      .maybeSingle();
+    return sanitiseCarolinaVoiceConfig(data);
+  } catch {
+    return { ...CAROLINA_VOICE_DEFAULTS };
   }
 }
 
@@ -129,6 +152,9 @@ wss.on("connection", (ws: WebSocket) => {
   let authed = false;
   let lessonContext = "";
   let systemInstruction = "";
+  // Per-connection config (voice id, models, speed, reflex toggle) fetched from
+  // user_carolina_voice on auth. Falls back to defaults until then.
+  let voiceCfg: CarolinaVoiceConfig = { ...CAROLINA_VOICE_DEFAULTS };
 
   const fetchElUsage = async (
     key: string,
@@ -199,7 +225,7 @@ wss.on("connection", (ws: WebSocket) => {
   ): TtsHandle => {
     const el = new WebSocket(
       `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input` +
-        `?model_id=${ELEVENLABS_MODEL}&output_format=pcm_22050`,
+        `?model_id=${voiceCfg.tts_model}&output_format=pcm_22050`,
     );
     let elReady = false;
     let closed = false;
@@ -216,7 +242,7 @@ wss.on("connection", (ws: WebSocket) => {
         voice_settings: {
           stability: 0.5,
           similarity_boost: 0.8,
-          speed: ttsSpeed(),
+          speed: voiceCfg.speed,
         },
         xi_api_key: elKey,
       });
@@ -355,18 +381,19 @@ wss.on("connection", (ws: WebSocket) => {
   const runTurn = (userText: string, options: { enableReflex?: boolean } = {}) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const elKey = process.env.ELEVENLABS_API_KEY;
-    const voiceId = process.env.ELEVENLABS_VOICE_ID;
+    const voiceId = voiceCfg.voice_id;
     if (!anthropicKey || !elKey || !voiceId) {
       send(ws, {
         type: "error",
         message:
-          "Missing AI keys: set ANTHROPIC_API_KEY, ELEVENLABS_API_KEY and " +
-          "ELEVENLABS_VOICE_ID in .env.",
+          "Missing AI keys / voice: set ANTHROPIC_API_KEY and ELEVENLABS_API_KEY " +
+          "as Fly secrets, and configure a voice in Piñata Settings.",
       });
       return;
     }
 
-    const REFLEX_ENABLED = (options.enableReflex ?? true) && reflexEnabled();
+    const REFLEX_ENABLED =
+      (options.enableReflex ?? true) && !voiceCfg.disable_reflex;
     const t0 = Date.now();
     let ttft = 0;
     let ttfa = 0;
@@ -419,7 +446,7 @@ wss.on("connection", (ws: WebSocket) => {
         try {
           const stream = anthropic.messages.stream(
             {
-              model: REFLEX_MODEL,
+              model: voiceCfg.reflex_model,
               max_tokens: 30,
               system: REFLEX_PROMPT,
               messages: [{ role: "user", content: userText }],
@@ -517,7 +544,7 @@ wss.on("connection", (ws: WebSocket) => {
         const sys = REFLEX_ENABLED ? `${baseSystem}${CONTINUITY_HINT}` : baseSystem;
         const stream = anthropic.messages.stream(
           {
-            model: BRAIN_MODEL,
+            model: voiceCfg.brain_model,
             max_tokens: 400,
             system: sys,
             messages: history.map((m) => ({
@@ -579,13 +606,17 @@ wss.on("connection", (ws: WebSocket) => {
     }
     if (msg.type === "start" || msg.type === "greet") {
       if (!authed) {
-        const ok = await verifyToken(msg.token);
-        if (!ok) {
+        const token = msg.token;
+        const userId = await verifyToken(token);
+        if (!userId) {
           send(ws, { type: "error", message: "unauthorized" });
           ws.close();
           return;
         }
         authed = true;
+        // Pull this user's voice + model config now so the very first turn
+        // uses their picks, not the defaults.
+        voiceCfg = await fetchVoiceConfig(token!);
       }
       if (msg.type === "greet") {
         // New call — reset per-call state and pick up the latest lesson

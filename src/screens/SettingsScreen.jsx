@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCachedSession } from "../lib/supabase.js";
 import { C } from "../styles/theme";
+import CarolinaVoiceSettings from "../components/CarolinaVoiceSettings.jsx";
 
 
 const MODEL_OPTIONS = [
@@ -345,6 +346,9 @@ export default function SettingsScreen() {
             );
           })}
         </div>
+
+        {/* Carolina Voice (voice ID + brain/reflex/TTS model + speed + reflex toggle) */}
+        <CarolinaVoiceSettings />
 
         {/* Pricing comparison table */}
         <div style={{ marginTop: 36 }}>
