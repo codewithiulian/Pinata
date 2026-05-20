@@ -55,3 +55,50 @@
 3. **Pick a lesson** → Start call → greeting references the lesson material or is at least clearly grounded; speak something tangential → Carolina weaves unit vocabulary into her reply per `gemini-voice-unit-context.md`. ✅
 4. **Press Done with no speech** → Carolina elaborates with a question instead of dying silent (empty-turn nudge). ✅
 5. **Hangup mid-Carolina-speech** → audio stops immediately, back to setup screen, no straggler audio. Start a new call with different lesson → new lesson context picked up (history reset). ✅
+
+---
+
+## Latency pass (3 s → ~1.1 s target)
+
+User complaint: ~3 s between pressing Done and hearing Carolina. Root causes
+addressed in this pass:
+
+1. **Reflex removed.** Haiku-driven filler ("Mmm, a ver…") deleted entirely.
+   No more reflex stream, reflex TTS WS, brain-audio buffer, or 1500 ms gate.
+   Brain audio plays directly on first chunk. Saves the gate-vs-reflex
+   coordination overhead (~200–400 ms) AND removes the second EL WS open per
+   turn.
+   - Server: `REFLEX_PROMPT`, `REFLEX_GATE_MS`, `elReflex`, `CONTINUITY_HINT`
+     import all gone from `carolina2-voice/server.ts`.
+   - `runTurn` no longer takes `enableReflex`; greet just calls `runTurn(text)`.
+   - `ttfaReflex` metric dropped from `types.ts`, hook, and HUD.
+   - **Dead config fields kept:** `disable_reflex` and `reflex_model` still
+     live in `carolina-voice-config.ts` and the `user_carolina_voice` table so
+     the Settings UI doesn't break. They are now no-ops server-side. Safe to
+     drop in a follow-up migration + Settings cleanup.
+2. **Finalize grace 1500 → 200 ms.** `stop` handler now calls
+   `closeDeepgram()` immediately (its `Close` event fires `finalizeUtterance`)
+   and uses a 200 ms safety-net timer. Saves ~1.3 s — biggest single win.
+3. **TTS flush threshold 20 → 10 chars** (`TTS_FLUSH_MIN_CHARS`). Brain feeds
+   ElevenLabs sooner, first audio leaves before a full clause arrives.
+
+### Implicit warm-ping (no code)
+
+`Carolina2Screen` invokes `useCarolina2Voice` on mount; the hook's mount
+`useEffect` calls `connect()` which opens the WS to Fly. With
+`auto_stop_machines='stop'` + `min_machines_running=0`, Fly's proxy holds the
+upgrade while booting the machine on cold start. By the time the user picks
+lessons and taps Start call, the machine is warm. **First-call cold start is
+masked by lesson-selection time.** No `/health` ping or daily cron needed.
+
+### Gotchas
+
+- `STOP_FINALIZE_MS = 200` is a safety net. The actual finalize trigger is
+  Deepgram's `Close` event firing → `finalizeUtterance` (idempotent via the
+  `finalized` flag). If finals get cut off, raise this OR investigate
+  Deepgram drain timing — don't ship a long blanket timer back.
+- Removing the per-user `disable_reflex` toggle at the schema level means a
+  migration. Defer until you also redesign the Settings UI; runtime no-op is
+  fine in the meantime.
+- Sub-1 s would need ElevenLabs WS persistence (pre-warm next brain WS at
+  `tts_done`, or migrate to `multi-stream-input`). Not done in this pass.

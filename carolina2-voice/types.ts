@@ -23,13 +23,12 @@ export type ServerMessage =
   | { type: "user_transcript"; text: string }
   | { type: "assistant_delta"; text: string }
   | { type: "assistant_done"; text: string }
-  | { type: "tts_chunk"; audio: string; track: "reflex" | "brain" }
+  | { type: "tts_chunk"; audio: string; track: "brain" }
   | { type: "tts_done" }
   | {
       type: "metrics";
       ttft: number;
       ttfa: number;
-      ttfaReflex: number;
       perceived: number;
       total: number;
       ttsChars: number;

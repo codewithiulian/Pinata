@@ -347,7 +347,7 @@ export default function SettingsScreen() {
           })}
         </div>
 
-        {/* Carolina Voice (voice ID + brain/reflex/TTS model + speed + reflex toggle) */}
+        {/* Carolina Voice (voice ID + brain/TTS model + speed) */}
         <CarolinaVoiceSettings />
 
         {/* Pricing comparison table */}

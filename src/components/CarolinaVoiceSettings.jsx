@@ -3,7 +3,6 @@ import { getCachedSession } from "../lib/supabase.js";
 import { C } from "../styles/theme";
 import {
   CAROLINA_BRAIN_MODELS,
-  CAROLINA_REFLEX_MODELS,
   CAROLINA_TTS_MODELS,
   CAROLINA_VOICE_DEFAULTS,
   CAROLINA_SPEED_MIN,
@@ -133,15 +132,6 @@ export default function CarolinaVoiceSettings() {
         />
 
         <Select
-          label="Reflex model"
-          hint="Generates the short filler ('mmm, a ver…') while Opus is thinking"
-          value={cfg.reflex_model}
-          options={CAROLINA_REFLEX_MODELS}
-          saved={savedNote === "reflex_model"}
-          onChange={(v) => persist({ reflex_model: v }, "reflex_model")}
-        />
-
-        <Select
           label="ElevenLabs TTS model"
           hint="Flash = lowest latency, Turbo = slightly higher quality"
           value={cfg.tts_model}
@@ -171,29 +161,6 @@ export default function CarolinaVoiceSettings() {
           />
         </Field>
 
-        {/* Reflex toggle */}
-        <Field
-          label="Reflex filler"
-          hint="When on, Carolina says a brief filler while the brain is generating. Off = no filler."
-          right={savedNote === "disable_reflex" && <SavedPill />}
-        >
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={!cfg.disable_reflex}
-              onChange={(e) =>
-                persist({ disable_reflex: !e.target.checked }, "disable_reflex")
-              }
-              style={{ width: 18, height: 18, accentColor: C.accent }}
-            />
-            <span style={{
-              fontSize: 14, fontWeight: 700, color: C.text,
-              fontFamily: "'Nunito', sans-serif",
-            }}>
-              {cfg.disable_reflex ? "Disabled" : "Enabled"}
-            </span>
-          </label>
-        </Field>
       </div>
     </div>
   );

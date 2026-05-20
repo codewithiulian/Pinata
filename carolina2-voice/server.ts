@@ -10,7 +10,7 @@ import { createClient as createSupabase } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ClientMessage, ServerMessage } from "./types.ts";
 import { STT_PATH } from "./types.ts";
-import { buildBrainSystem, CONTINUITY_HINT } from "./prompt.ts";
+import { buildBrainSystem } from "./prompt.ts";
 import {
   CAROLINA_VOICE_DEFAULTS,
   sanitiseCarolinaVoiceConfig,
@@ -24,22 +24,16 @@ const GREET_TRIGGER = "Hola, Carolina.";
 loadEnv();
 
 const port = Number(process.env.PORT) || 3100;
-// Brain / reflex / TTS model + voice + speed + reflex toggle live per-user in
-// Supabase (table `user_carolina_voice`, RLS-gated). Fetched once on WS auth.
-// Fly secrets no longer carry these; defaults below cover first-time users.
+// Brain / TTS model + voice + speed live per-user in Supabase
+// (table `user_carolina_voice`, RLS-gated). Fetched once on WS auth.
+// Reflex (Haiku filler) was removed; `disable_reflex` and `reflex_model` are
+// dead fields kept in the schema for back-compat with Settings UI.
 const HISTORY_CAP = 20;
-const REFLEX_GATE_MS = 1500;
-
-const REFLEX_PROMPT = `You generate ONE very short Spanish filler/acknowledgment to buy thinking time.
-Output 1-4 words only. Examples:
-- "Mmm, a ver..."
-- "Interesante..."
-- "Vale, déjame pensar..."
-- "Claro..."
-- "Ah, sí..."
-Match the user's emotional tone (curious, frustrated, excited).
-Do NOT answer their question. Just acknowledge naturally.
-NEVER output anything other than the filler. No quotes, no explanation.`;
+// User pressed Done; close Deepgram immediately and finalize with a small
+// safety net to drain in-flight finals.
+const STOP_FINALIZE_MS = 200;
+// Flush partial TTS sooner — first audio chunk leaves before a full sentence.
+const TTS_FLUSH_MIN_CHARS = 10;
 
 const allowedOrigins = (process.env.CAROLINA2_ALLOWED_ORIGIN || "")
   .split(",")
@@ -146,13 +140,11 @@ wss.on("connection", (ws: WebSocket) => {
   // Set once from the first authenticated `start` / `greet`. The picked-lesson
   // markdown is chosen before the call, so it is constant for this connection.
   // `systemInstruction` is the full Carolina-voice prompt (identity + base +
-  // unit-context/general-mode) built client-side via /api/carolina2-prompt; we
-  // use it as-is for the Opus brain and only append CONTINUITY_HINT when a
-  // reflex filler is actually emitted on a given turn.
+  // unit-context/general-mode) built client-side via /api/carolina2-prompt.
   let authed = false;
   let lessonContext = "";
   let systemInstruction = "";
-  // Per-connection config (voice id, models, speed, reflex toggle) fetched from
+  // Per-connection config (voice id, models, speed) fetched from
   // user_carolina_voice on auth. Falls back to defaults until then.
   let voiceCfg: CarolinaVoiceConfig = { ...CAROLINA_VOICE_DEFAULTS };
 
@@ -198,22 +190,14 @@ wss.on("connection", (ws: WebSocket) => {
     close: () => void;
   };
   let currentAbort: AbortController | null = null;
-  let elReflex: TtsHandle | null = null;
   let elBrain: TtsHandle | null = null;
-  let clearGate: (() => void) | null = null;
 
   const cancelTurn = () => {
     if (currentAbort) {
       currentAbort.abort();
       currentAbort = null;
     }
-    if (clearGate) {
-      clearGate();
-      clearGate = null;
-    }
-    elReflex?.close();
     elBrain?.close();
-    elReflex = null;
     elBrain = null;
   };
 
@@ -375,10 +359,9 @@ wss.on("connection", (ws: WebSocket) => {
   };
 
   // Run a full assistant turn (Anthropic brain → ElevenLabs TTS).
-  // `enableReflex` controls whether the Haiku filler is spoken first; turn it
-  // off for the opening greeting so Carolina doesn't preface "hola" with
-  // "mmm, a ver…".
-  const runTurn = (userText: string, options: { enableReflex?: boolean } = {}) => {
+  // Reflex (Haiku filler) was removed: brain audio plays directly with no
+  // gate or buffer, trading a fake "mmm, a ver…" for ~700 ms less round-trip.
+  const runTurn = (_userText: string) => {
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const elKey = process.env.ELEVENLABS_API_KEY;
     const voiceId = voiceCfg.voice_id;
@@ -392,12 +375,9 @@ wss.on("connection", (ws: WebSocket) => {
       return;
     }
 
-    const REFLEX_ENABLED =
-      (options.enableReflex ?? true) && !voiceCfg.disable_reflex;
     const t0 = Date.now();
     let ttft = 0;
     let ttfa = 0;
-    let ttfaReflex = 0;
     let perceived = 0;
     let fullText = "";
     let ttsBuffer = "";
@@ -407,82 +387,19 @@ wss.on("connection", (ws: WebSocket) => {
     currentAbort = ac;
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    const brainAudioBuffer: string[] = [];
-    let gateOpen = false;
-
-    const sendChunk = (audio: string, track: "reflex" | "brain") => {
+    const sendChunk = (audio: string) => {
       if (!perceived) perceived = Date.now() - t0;
-      send(ws, { type: "tts_chunk", audio, track });
+      send(ws, { type: "tts_chunk", audio, track: "brain" });
     };
-    const openGate = () => {
-      if (gateOpen) return;
-      gateOpen = true;
-      if (clearGate) {
-        clearGate();
-        clearGate = null;
-      }
-      for (const audio of brainAudioBuffer) sendChunk(audio, "brain");
-      brainAudioBuffer.length = 0;
-    };
-    const gateTimer = setTimeout(openGate, REFLEX_GATE_MS);
-    clearGate = () => clearTimeout(gateTimer);
-
-    if (!REFLEX_ENABLED) {
-      openGate();
-    } else {
-      const reflex = openTts(
-        voiceId,
-        elKey,
-        (audio) => {
-          if (!ttfaReflex) ttfaReflex = Date.now() - t0;
-          sendChunk(audio, "reflex");
-        },
-        openGate,
-      );
-      elReflex = reflex;
-
-      (async () => {
-        let filler = "";
-        try {
-          const stream = anthropic.messages.stream(
-            {
-              model: voiceCfg.reflex_model,
-              max_tokens: 30,
-              system: REFLEX_PROMPT,
-              messages: [{ role: "user", content: userText }],
-            },
-            { signal: ac.signal },
-          );
-          stream.on("text", (delta: string) => {
-            filler += delta;
-          });
-          await stream.finalMessage();
-          const fillerText = filler.trim();
-          if (fillerText) {
-            const chunk = fillerText + " ";
-            turnTtsChars += chunk.length;
-            reflex.feed(chunk);
-            reflex.endInput();
-          } else {
-            openGate();
-          }
-        } catch {
-          if (ac.signal.aborted) return;
-          openGate();
-        }
-      })();
-    }
 
     const brain = openTts(
       voiceId,
       elKey,
       (audio) => {
         if (!ttfa) ttfa = Date.now() - t0;
-        if (gateOpen) sendChunk(audio, "brain");
-        else brainAudioBuffer.push(audio);
+        sendChunk(audio);
       },
       () => {
-        openGate();
         send(ws, { type: "tts_done" });
         sessionTtsChars += turnTtsChars;
         brain.close();
@@ -492,7 +409,6 @@ wss.on("connection", (ws: WebSocket) => {
           type: "metrics" as const,
           ttft,
           ttfa,
-          ttfaReflex,
           perceived,
           total: Date.now() - t0,
           ttsChars: turnTtsChars,
@@ -527,7 +443,7 @@ wss.on("connection", (ws: WebSocket) => {
         ttsBuffer = "";
         return;
       }
-      if (/[.?!,]/.test(ttsBuffer) || ttsBuffer.length >= 20) {
+      if (/[.?!,]/.test(ttsBuffer) || ttsBuffer.length >= TTS_FLUSH_MIN_CHARS) {
         const chunk = ttsBuffer + " ";
         turnTtsChars += chunk.length;
         brain.feed(chunk);
@@ -537,11 +453,7 @@ wss.on("connection", (ws: WebSocket) => {
 
     (async () => {
       try {
-        const baseSystem = systemInstruction || buildBrainSystem(
-          lessonContext,
-          false,
-        );
-        const sys = REFLEX_ENABLED ? `${baseSystem}${CONTINUITY_HINT}` : baseSystem;
+        const sys = systemInstruction || buildBrainSystem(lessonContext, false);
         const stream = anthropic.messages.stream(
           {
             model: voiceCfg.brain_model,
@@ -626,7 +538,7 @@ wss.on("connection", (ws: WebSocket) => {
         lessonContext = (msg.lessonContext || "").toString();
         systemInstruction = (msg.systemInstruction || "").toString();
         history.push({ role: "user", content: GREET_TRIGGER });
-        runTurn(GREET_TRIGGER, { enableReflex: false });
+        runTurn(GREET_TRIGGER);
       } else {
         // `start` is a user turn within an in-progress call. Lesson context
         // and system prompt were already set at greet; allow late-binding if
@@ -641,9 +553,11 @@ wss.on("connection", (ws: WebSocket) => {
       }
     } else if (msg.type === "stop") {
       if (!authed) return;
+      // User pressed Done. Close Deepgram immediately (its Close event fires
+      // finalizeUtterance); the timer is a safety net in case Close is slow.
       closeDeepgram();
       if (finalizeTimer) clearTimeout(finalizeTimer);
-      finalizeTimer = setTimeout(finalizeUtterance, 1500);
+      finalizeTimer = setTimeout(finalizeUtterance, STOP_FINALIZE_MS);
     } else if (msg.type === "cancel") {
       if (!authed) return;
       cancelTurn();

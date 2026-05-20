@@ -236,7 +236,6 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
         setMetrics({
           ttft: msg.ttft,
           ttfa: msg.ttfa,
-          ttfaReflex: msg.ttfaReflex,
           perceived: msg.perceived,
           total: msg.total,
           ttsChars: msg.ttsChars,

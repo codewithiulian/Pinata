@@ -41,7 +41,6 @@ function Hud({ status, sttLatencyMs, metrics, session, mimeType }) {
     }}>
       <div>state: {status}</div>
       <div>stt latency: <span style={{ color: "#fff" }}>{fmt(sttLatencyMs)}</span></div>
-      <div>reflex first audio: <span style={{ color: "#fff" }}>{fmt(metrics?.ttfaReflex)}</span></div>
       <div>perceived: <span style={{ color: "#fde047", fontWeight: 700 }}>{fmt(metrics?.perceived)}</span></div>
       <div>opus first token: <span style={{ color: "#fff" }}>{fmt(metrics?.ttft)}</span></div>
       <div>brain first audio: <span style={{ color: "#fff" }}>{fmt(metrics?.ttfa)}</span></div>
