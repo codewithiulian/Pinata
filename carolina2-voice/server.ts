@@ -183,6 +183,11 @@ wss.on("connection", (ws: WebSocket) => {
   // to null whenever dgConn is null. Lets startDeepgram await whatever
   // prewarmDeepgram already kicked off without re-opening a second WS.
   let dgOpenPromise: Promise<void> | null = null;
+  let dgIsOpen = false;
+  // Audio chunks that arrive from the client between the pre-warmed DG WS
+  // being created and its Open event firing. Flushed in order once Open
+  // arrives so we never drop the first syllable of a user turn.
+  let dgPendingAudio: ArrayBuffer[] = [];
   let utteranceParts: string[] = [];
   let finalizeTimer: NodeJS.Timeout | null = null;
   let finalized = false;
@@ -286,6 +291,8 @@ wss.on("connection", (ws: WebSocket) => {
       }
       dgConn = null;
       dgOpenPromise = null;
+      dgIsOpen = false;
+      dgPendingAudio = [];
     }
   };
 
@@ -305,8 +312,25 @@ wss.on("connection", (ws: WebSocket) => {
       smart_format: true,
     });
     dgConn = conn;
+    dgIsOpen = false;
+    dgPendingAudio = [];
     dgOpenPromise = new Promise<void>((resolve) => {
-      conn.on(LiveTranscriptionEvents.Open, () => resolve());
+      conn.on(LiveTranscriptionEvents.Open, () => {
+        dgIsOpen = true;
+        // Drain any audio chunks that landed while the WS was still
+        // handshaking. Order is preserved — client sends sequentially.
+        const pending = dgPendingAudio;
+        dgPendingAudio = [];
+        for (const ab of pending) {
+          try {
+            conn.send(ab);
+          } catch {
+            // conn might have errored between Open and drain
+            break;
+          }
+        }
+        resolve();
+      });
     });
     conn.on(LiveTranscriptionEvents.Transcript, (data) => {
       const alt = data?.channel?.alternatives?.[0];
@@ -529,12 +553,17 @@ wss.on("connection", (ws: WebSocket) => {
   ws.on("message", async (data: Buffer, isBinary: boolean) => {
     if (socketClosed) return;
     if (isBinary) {
-      if (authed && dgConn && dgConn.getReadyState() === 1) {
-        const ab = data.buffer.slice(
-          data.byteOffset,
-          data.byteOffset + data.byteLength,
-        ) as ArrayBuffer;
+      if (!authed || !dgConn) return;
+      const ab = data.buffer.slice(
+        data.byteOffset,
+        data.byteOffset + data.byteLength,
+      ) as ArrayBuffer;
+      if (dgIsOpen && dgConn.getReadyState() === 1) {
         dgConn.send(ab);
+      } else {
+        // DG WS still in mid-Open handshake — buffer; the Open handler
+        // drains in order. Keeps the first syllables of the user's turn.
+        dgPendingAudio.push(ab);
       }
       return;
     }

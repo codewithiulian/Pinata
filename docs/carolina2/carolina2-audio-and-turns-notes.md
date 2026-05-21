@@ -144,3 +144,36 @@ every turn. Fixed in this pass:
 - DG idle timeout (~12 s) isn't a concern: Carolina's TTS is 2-5 s, then
   user speaks within 1-2 s of audio end. Audio data flow starts well within
   the timeout window.
+
+## Optimistic recorder + server-side audio buffer
+
+`"Connecting…"` text was still flashing briefly between audio tail end and
+the server's `ready` round-trip. Killed in this pass:
+
+- **Optimistic MediaRecorder start (client).** `startTurn` now creates and
+  starts MediaRecorder inline, then sets `status = "recording"` and sends
+  `start` to the server. The UI flips straight from `speaking → recording`
+  — no `connecting` state, no "Connecting…" copy. The `ready` event from
+  the server is now a no-op on the client.
+- **Server-side audio buffer.** Binary audio chunks that arrive before the
+  pre-warmed DG WS fires its `Open` event are pushed to `dgPendingAudio`
+  and drained in order on `Open`. Prevents losing the first syllable of a
+  user turn if the pre-warm handshake hadn't completed yet.
+- **`dgConn` state hygiene.** `dgIsOpen` flag tracks Open lifecycle;
+  `closeDeepgram` resets it along with `dgOpenPromise` and the pending
+  audio buffer so a re-prewarm starts from a clean slate.
+
+### Gotchas
+
+- The recorder is started before the server confirms anything. If the WS
+  is OPEN but the server is broken / Deepgram is down, the user sees the
+  green button but their speech goes nowhere. Deepgram's `Error` event
+  still surfaces to the client as `{type:"error"}` which flips status to
+  `error` — visible to the user.
+- Binary chunks are dropped silently when `authed === false` or
+  `dgConn === null`. Both should be true on the happy path (greet → first
+  delta prewarms, then user turns). Other paths are guarded by the same
+  status flow.
+- The `ready` event still fires server-side (after `dgOpenPromise`
+  resolves) and is harmless on the client. Don't repurpose it without
+  checking — debug tooling may still listen.

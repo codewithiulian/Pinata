@@ -133,19 +133,11 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
   const handleMessage = useCallback(
     (msg) => {
       if (msg.type === "ready") {
-        const stream = streamRef.current;
-        const mime = mimeRef.current;
-        if (!stream || !mime) return;
-        const recorder = new MediaRecorder(stream, { mimeType: mime });
-        recorderRef.current = recorder;
-        recorder.ondataavailable = (e) => {
-          const ws = wsRef.current;
-          if (e.data.size > 0 && ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(e.data);
-          }
-        };
-        recorder.start(250);
-        setStatus("recording");
+        // No-op: `startTurn` now creates and starts MediaRecorder optimistically
+        // so the UI flips straight from speaking → recording with no
+        // "Connecting…" gap. The server pre-warms Deepgram during Carolina's
+        // reply and buffers any binary chunks that arrive before its WS is
+        // fully open, so dropping audio is not a concern.
       } else if (msg.type === "partial") {
         setPartial(msg.text);
       } else if (msg.type === "final") {
@@ -329,7 +321,7 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
   }, [connect, stopPlayback]);
 
   const startTurn = useCallback(async () => {
-    if (status === "recording" || status === "connecting") return;
+    if (status === "recording") return;
 
     setUserText("");
     setPartial("");
@@ -340,7 +332,6 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
     setErrorMsg("");
     releasedAtRef.current = null;
     sttMeasuredRef.current = false;
-    setStatus("connecting");
 
     if (!audioCtxRef.current) {
       audioCtxRef.current = new AudioContext();
@@ -397,6 +388,24 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
       // tracksAlive check above will reuse it.
       return;
     }
+
+    // Start the MediaRecorder OPTIMISTICALLY — flip UI to "recording" the
+    // moment Carolina's audio tail drains. No `connecting` state, no
+    // "Connecting…" text. Binary chunks stream to the server immediately;
+    // the server pre-warmed its Deepgram WS during Carolina's reply and
+    // buffers any chunks that arrive before that WS finishes its Open
+    // handshake, so we don't drop the first user word.
+    const recorder = new MediaRecorder(stream, { mimeType: mime });
+    recorderRef.current = recorder;
+    recorder.ondataavailable = (e) => {
+      const wsr = wsRef.current;
+      if (e.data.size > 0 && wsr && wsr.readyState === WebSocket.OPEN) {
+        wsr.send(e.data);
+      }
+    };
+    recorder.start(250);
+    setStatus("recording");
+
     const token = getCachedSession()?.access_token || "";
     ws.send(
       JSON.stringify({
@@ -492,7 +501,7 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
   const clearError = useCallback(() => setErrorMsg(""), []);
 
   const endTurn = useCallback(() => {
-    if (status !== "recording" && status !== "connecting") return;
+    if (status !== "recording") return;
     releasedAtRef.current = performance.now();
     if (recorderRef.current && recorderRef.current.state !== "inactive") {
       recorderRef.current.stop();
