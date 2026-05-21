@@ -102,3 +102,45 @@ masked by lesson-selection time.** No `/health` ping or daily cron needed.
   fine in the meantime.
 - Sub-1 s would need ElevenLabs WS persistence (pre-warm next brain WS at
   `tts_done`, or migrate to `multi-stream-input`). Not done in this pass.
+
+## "Connecting…" pass (between-turn gap)
+
+User-reported ~1.5 s "Connecting…" between Carolina finishing speech and
+mic re-opening. Caused by fresh Deepgram WS open + fresh `getUserMedia` on
+every turn. Fixed in this pass:
+
+- **Pre-warm Deepgram during Carolina's reply.** `prewarmDeepgram()` opens
+  the DG WS on the **first brain text delta** (server `runTurn` stream
+  handler). The handshake completes during TTS playback, so when the client
+  sends `start` after the audio tail, `ready` fires near-instantly.
+  - New `dgOpenPromise` resolves on DG's `Open` event; `startDeepgram` awaits
+    it and sends `ready` once resolved.
+  - Idempotent: a second `prewarmDeepgram()` call while a conn is alive is a
+    no-op.
+  - `cancel` (hangup) and `stop` (Done speaking) still close DG; the next
+    `assistant_delta` reopens it.
+- **Keep mic stream alive across turns.** `endTurn` no longer stops
+  MediaStream tracks — only the MediaRecorder. `startTurn` reuses the cached
+  stream when all tracks are still `readyState === "live"`. `endCall` still
+  tears the stream down on hangup. Browser AEC handles speaker bleed while
+  Carolina is still playing.
+
+### Combined projected gap
+
+| Stage | Before | After |
+|---|---:|---:|
+| Audio tail wait (no UI) | 200-800 ms | 200-800 ms (unchanged) |
+| `getUserMedia` | 100-300 ms | 0 (cached) |
+| Deepgram WS open | 200-500 ms | 0 (pre-warmed) |
+| `ready` round-trip | 50-100 ms | 50-100 ms |
+| **"Connecting…" total** | **~400-900 ms** | **~50-150 ms** |
+
+### Gotchas
+
+- If DG is in mid-handshake when `start` arrives, `startDeepgram` awaits the
+  same `dgOpenPromise` — no double-open.
+- If user hangs up mid-Carolina, `cancel` → `closeDeepgram` tears down the
+  pre-warmed conn. Next call starts fresh on greet.
+- DG idle timeout (~12 s) isn't a concern: Carolina's TTS is 2-5 s, then
+  user speaks within 1-2 s of audio end. Audio data flow starts well within
+  the timeout window.

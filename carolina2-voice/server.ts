@@ -179,6 +179,10 @@ wss.on("connection", (ws: WebSocket) => {
   }
 
   let dgConn: ListenLiveClient | null = null;
+  // Promise that resolves once the current dgConn fires its Open event. Reset
+  // to null whenever dgConn is null. Lets startDeepgram await whatever
+  // prewarmDeepgram already kicked off without re-opening a second WS.
+  let dgOpenPromise: Promise<void> | null = null;
   let utteranceParts: string[] = [];
   let finalizeTimer: NodeJS.Timeout | null = null;
   let finalized = false;
@@ -281,20 +285,17 @@ wss.on("connection", (ws: WebSocket) => {
         // already closing
       }
       dgConn = null;
+      dgOpenPromise = null;
     }
   };
 
-  const startDeepgram = () => {
-    cancelTurn();
-    closeDeepgram();
-    if (finalizeTimer) {
-      clearTimeout(finalizeTimer);
-      finalizeTimer = null;
-    }
-    utteranceParts = [];
-    finalized = false;
-
-    dgConn = deepgram.listen.live({
+  // Open the Deepgram WS without sending `ready` to the client. Called
+  // anticipatorily (after assistant_done) so the WS handshake finishes during
+  // Carolina's TTS playback — the next user turn finds it already open.
+  // Idempotent: subsequent calls while a conn is alive are no-ops.
+  const prewarmDeepgram = () => {
+    if (dgConn || socketClosed) return;
+    const conn = deepgram.listen.live({
       model: "nova-3",
       language: "es",
       interim_results: true,
@@ -303,11 +304,11 @@ wss.on("connection", (ws: WebSocket) => {
       vad_events: true,
       smart_format: true,
     });
-
-    dgConn.on(LiveTranscriptionEvents.Open, () => {
-      send(ws, { type: "ready" });
+    dgConn = conn;
+    dgOpenPromise = new Promise<void>((resolve) => {
+      conn.on(LiveTranscriptionEvents.Open, () => resolve());
     });
-    dgConn.on(LiveTranscriptionEvents.Transcript, (data) => {
+    conn.on(LiveTranscriptionEvents.Transcript, (data) => {
       const alt = data?.channel?.alternatives?.[0];
       const text: string = alt?.transcript ?? "";
       if (!text) return;
@@ -318,15 +319,35 @@ wss.on("connection", (ws: WebSocket) => {
         send(ws, { type: "partial", text, ts: Date.now() });
       }
     });
-    dgConn.on(LiveTranscriptionEvents.Error, (err) => {
+    conn.on(LiveTranscriptionEvents.Error, (err) => {
       send(ws, {
         type: "error",
         message:
           typeof err?.message === "string" ? err.message : "Deepgram error",
       });
     });
-    dgConn.on(LiveTranscriptionEvents.Close, () => {
+    conn.on(LiveTranscriptionEvents.Close, () => {
       finalizeUtterance();
+    });
+  };
+
+  // Begin a user turn: reset utterance state, ensure DG is open (reusing the
+  // pre-warmed conn if present), then signal `ready` to the client.
+  const startDeepgram = () => {
+    cancelTurn();
+    if (finalizeTimer) {
+      clearTimeout(finalizeTimer);
+      finalizeTimer = null;
+    }
+    utteranceParts = [];
+    finalized = false;
+
+    if (!dgConn) prewarmDeepgram();
+    const pending = dgOpenPromise;
+    if (!pending) return;
+    pending.then(() => {
+      if (socketClosed) return;
+      send(ws, { type: "ready" });
     });
   };
 
@@ -467,7 +488,14 @@ wss.on("connection", (ws: WebSocket) => {
           { signal: ac.signal },
         );
         stream.on("text", (delta: string) => {
-          if (!ttft) ttft = Date.now() - t0;
+          if (!ttft) {
+            ttft = Date.now() - t0;
+            // Carolina is replying → user turn comes next. Open the Deepgram
+            // WS now so its TLS+auth handshake finishes during TTS playback;
+            // by the time the client sends `start` after the audio tail, the
+            // WS is already open and `ready` fires near-instantly.
+            prewarmDeepgram();
+          }
           fullText += delta;
           ttsBuffer += delta;
           send(ws, { type: "assistant_delta", text: delta });

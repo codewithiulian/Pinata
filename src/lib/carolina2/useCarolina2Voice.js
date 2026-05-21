@@ -366,24 +366,35 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
     mimeRef.current = mime;
     setMimeType(mime);
 
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true },
-      });
-    } catch {
-      setStatus("error");
-      setErrorMsg("Microphone permission denied.");
-      return;
+    // Reuse the mic stream across turns: avoids a fresh getUserMedia call
+    // (100-300 ms permission lookup) on every utterance and prevents the
+    // browser mic indicator from flickering. Browser-level acoustic echo
+    // cancellation handles speaker bleed while Carolina is still playing.
+    let stream = streamRef.current;
+    const tracksAlive =
+      !!stream &&
+      stream.getTracks().length > 0 &&
+      stream.getTracks().every((t) => t.readyState === "live");
+    if (!tracksAlive) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+        });
+      } catch {
+        setStatus("error");
+        setErrorMsg("Microphone permission denied.");
+        return;
+      }
+      streamRef.current = stream;
     }
-    streamRef.current = stream;
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       setStatus("error");
       setErrorMsg("Not connected to the voice service. Retrying — try again shortly.");
       connect();
-      stream.getTracks().forEach((t) => t.stop());
+      // Leave the mic stream alive; the user will retry shortly and the
+      // tracksAlive check above will reuse it.
       return;
     }
     const token = getCachedSession()?.access_token || "";
@@ -487,8 +498,9 @@ export function useCarolina2Voice(wsUrl, lessonContextRef, systemInstructionRef)
       recorderRef.current.stop();
     }
     recorderRef.current = null;
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
+    // Intentionally keep streamRef.current alive — next startTurn reuses
+    // the same MediaStream so we skip getUserMedia. Stream is torn down only
+    // on endCall() or unmount.
     const ws = wsRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ type: "stop" }));
